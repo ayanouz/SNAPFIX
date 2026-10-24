@@ -60,6 +60,7 @@ The default configuration runs in **explicit demo mode**. No Supabase project or
 | Backend      | Supabase Postgres, Auth, Storage, Edge Functions (Deno)                       |
 | AI           | Server-side provider abstraction: OpenAI, Anthropic, Gemini, or explicit demo |
 | Testing      | Jest, jest-expo, React Native Testing Library                                 |
+| Web preview  | React Native Web via Expo Router (smoke testing, not a store target)          |
 | CI           | GitHub Actions                                                                |
 
 ---
@@ -73,7 +74,7 @@ npm install
 npm start
 ```
 
-Then press `a` for an Android emulator/device, `i` for the iOS simulator (macOS), or scan the QR code with a development build. Expo Go can run the JavaScript but cannot reproduce every native module behavior; a development build is recommended for notifications and image workflows.
+Then press `a` for an Android emulator/device, `i` for the iOS simulator (macOS), `w` for a browser preview, or scan the QR code with a development build. Expo Go can run the JavaScript but cannot reproduce every native module behavior; a development build is recommended for notifications and image workflows. The web preview is useful for fast UI and flow checks, not as a substitute for native verification.
 
 No `.env` file is required. With no Supabase variables, SNAPFIX starts in demo mode and stores data locally on the device.
 

@@ -12,6 +12,8 @@ Verified locally on 2026-10-24:
 | Unit/component/integration tests | `npm run test:ci`                                      | **9 suites, 42 tests passed**                    |
 | Android production bundle        | `npx expo export --platform android --output-dir dist` | Bundled successfully (2,097 modules)             |
 | iOS production bundle            | `npx expo export --platform ios --output-dir dist`     | Bundled successfully (2,101 modules)             |
+| Web production bundle            | `npx expo export --platform web --output-dir dist`     | Bundled successfully (1,772 modules)             |
+| Web dev-server smoke test        | `npm run web` (manual browser flow)                    | **Passed** (see 1.1)                             |
 | Native build                     | —                                                      | **Not run** (no Android SDK; iOS requires macOS) |
 | Hosted Supabase migrations/RLS   | —                                                      | **Not run**                                      |
 | Edge Functions (Deno)            | —                                                      | **Not run** (no Deno/Supabase CLI/Docker)        |
@@ -19,6 +21,19 @@ Verified locally on 2026-10-24:
 | Maestro E2E                      | `maestro test e2e/smoke.yaml`                          | **Not run**                                      |
 
 These results must not be read as a claim that a store build or live deployment has been verified.
+
+### 1.1 Web dev-server smoke test
+
+On 2026-10-24 the web target was started with `npx expo start --web` and exercised in a browser in demo mode:
+
+- onboarding → demo sign-in → home
+- photo selection → description → completed diagnosis
+- repair guide → quote comparison
+- history and usage counter update
+- maintenance task creation
+- Arabic language switch
+
+No uncaught console errors remained after the test. This run found and fixed a web-only startup crash: `expo-notifications` does not implement `getLastNotificationResponse()` on web, so notification-response handling is now skipped when `Platform.OS === 'web'`. The browser preview is still not a substitute for native verification, and maintenance reminders are intentionally not scheduled on web.
 
 ## 2. Commands
 
@@ -29,6 +44,7 @@ npm run test:watch       # watch mode
 npm run typecheck        # tsc --noEmit
 npm run lint             # expo lint
 npm run format:check     # Prettier
+npm run web              # browser preview (manual smoke testing)
 ```
 
 Coverage is configured in `jest.config.js` with a modest global threshold:

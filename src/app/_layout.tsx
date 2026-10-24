@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -31,6 +32,9 @@ function NotificationObserver() {
   const router = useRouter();
 
   useEffect(() => {
+    // expo-notifications does not implement response handling on web.
+    if (Platform.OS === 'web') return;
+
     function redirect(notification: Notifications.Notification) {
       const url = notification.request.content.data?.url;
       if (typeof url === 'string') {
