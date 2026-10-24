@@ -1,0 +1,25 @@
+-- SNAPFIX seed data
+--
+-- Deliberately empty of price rows.
+--
+-- The cost estimator only returns a range when a recent, verified local price
+-- reference matches the category, currency, region, and cause. Seeding invented
+-- numbers would violate the product rule that SNAPFIX never fabricates prices.
+--
+-- Populate public.price_references from real supplier/technician data you have
+-- verified, for example:
+--
+-- insert into public.price_references (
+--   category, currency, region, part_name, cause_keywords,
+--   min_price, max_price, includes_parts, includes_labor,
+--   source_name, source_url, verified_at, verified_by
+-- ) values (
+--   'plumbing', 'MAD', 'MA', 'Replacement fill valve',
+--   array['fill valve', 'toilet runs', 'robinet de remplissage'],
+--   120, 250, true, false,
+--   'Your verified supplier catalogue', 'https://example.com/source',
+--   '2026-10-01T00:00:00Z', 'your-reviewer'
+-- );
+--
+-- Until then the app shows "estimate unavailable" with an explanation. That is
+-- the intended, honest behaviour.

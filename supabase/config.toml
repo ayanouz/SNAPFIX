@@ -1,0 +1,33 @@
+# SNAPFIX local Supabase configuration.
+# The project_id is a local label only; link your real project with
+# `supabase link --project-ref <ref>` before deploying.
+
+project_id = "snapfix"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 17
+
+[studio]
+enabled = true
+port = 54323
+
+[storage]
+enabled = true
+file_size_limit = "8MiB"
+
+[functions.analyze-diagnosis]
+verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = true
+
+[functions.billing-webhook]
+verify_jwt = false

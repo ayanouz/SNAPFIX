@@ -1,0 +1,28 @@
+appId: com.snapfix.app
+---
+# SNAPFIX demo smoke flow.
+# Prerequisites: a development/production build installed on an emulator or device,
+# with demo mode enabled (no Supabase credentials). This flow has NOT been run in
+# the repository verification environment.
+- launchApp:
+    clearState: true
+
+- assertVisible: 'A calmer way to fix things'
+- assertVisible: 'Get started'
+- tapOn: 'Get started'
+
+- assertVisible: 'Sign in'
+- assertVisible: 'Explore the demo'
+- tapOn: 'Explore the demo'
+
+- assertVisible: 'New diagnosis'
+- assertVisible: 'Demo mode'
+
+- tapOn: 'History'
+- assertVisible: 'Nothing here yet'
+
+- tapOn: 'Maintenance'
+- assertVisible: 'Maintenance'
+
+- tapOn: 'Profile'
+- assertVisible: 'Profile'
