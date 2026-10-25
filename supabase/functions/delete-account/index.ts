@@ -13,23 +13,53 @@ import {
 
 async function removeUserImages(admin: SupabaseClient, userId: string): Promise<void> {
   const bucket = admin.storage.from('diagnosis-images');
-  const { data: folders, error } = await bucket.list(userId, { limit: 1000 });
-  if (error) {
-    console.error('storage list failed during account deletion', error.message);
-    return;
-  }
   const paths: string[] = [];
-  for (const folder of folders ?? []) {
-    if (!folder.name) continue;
-    const { data: files } = await bucket.list(`${userId}/${folder.name}`, { limit: 1000 });
-    for (const file of files ?? []) {
-      if (file.name) paths.push(`${userId}/${folder.name}/${file.name}`);
+
+  // Storage paths are `userId/diagnosisId/file`. Page through folders and files
+  // so account deletion does not leave objects behind for large accounts.
+  for (let offset = 0; ; offset += 1000) {
+    const { data: folders, error } = await bucket.list(userId, { limit: 1000, offset });
+    if (error) {
+      throw new ApiError(
+        'storage_failed',
+        'Stored photos could not be listed. Try deleting the account again.',
+        500,
+      );
     }
+    if (!folders || folders.length === 0) break;
+
+    for (const folder of folders) {
+      if (!folder.name) continue;
+      for (let fileOffset = 0; ; fileOffset += 1000) {
+        const { data: files, error: filesError } = await bucket.list(`${userId}/${folder.name}`, {
+          limit: 1000,
+          offset: fileOffset,
+        });
+        if (filesError) {
+          throw new ApiError(
+            'storage_failed',
+            'Stored photos could not be listed. Try deleting the account again.',
+            500,
+          );
+        }
+        if (!files || files.length === 0) break;
+        for (const file of files) {
+          if (file.name) paths.push(`${userId}/${folder.name}/${file.name}`);
+        }
+        if (files.length < 1000) break;
+      }
+    }
+    if (folders.length < 1000) break;
   }
+
   if (paths.length > 0) {
     const { error: removeError } = await bucket.remove(paths);
     if (removeError) {
-      console.error('storage cleanup failed during account deletion', removeError.message);
+      throw new ApiError(
+        'storage_failed',
+        'Stored photos could not be removed. Try deleting the account again.',
+        500,
+      );
     }
   }
 }

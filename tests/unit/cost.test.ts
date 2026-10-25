@@ -62,6 +62,32 @@ describe('deterministic cost estimator', () => {
     expect(estimate.assumptions.some((line) => line.includes('Labour is not included'))).toBe(true);
   });
 
+  it('localizes assumptions without changing the numeric range', () => {
+    const french = estimateRepair({
+      analysis: analysisWithCause(),
+      currency: 'MAD',
+      region: 'MA',
+      locale: 'fr',
+      references: [reference],
+      now,
+    });
+    expect(french.minimum).toBe(300);
+    expect(french.assumptions[0]).toContain('Réparation de référence');
+    expect(french.assumptions.some((line) => line.includes('main-d’œuvre'))).toBe(true);
+
+    const arabic = estimateRepair({
+      analysis: analysisWithCause(),
+      currency: 'MAD',
+      region: 'MA',
+      locale: 'ar',
+      references: [reference],
+      now,
+    });
+    expect(arabic.maximum).toBe(600);
+    expect(arabic.assumptions[0]).toContain('الإصلاح المرجعي');
+    expect(arabic.assumptions.some((line) => line.includes('أجرة العمل'))).toBe(true);
+  });
+
   it('returns unavailable when no reference exists in the requested currency', () => {
     const estimate = estimateRepair({
       analysis: analysisWithCause(),

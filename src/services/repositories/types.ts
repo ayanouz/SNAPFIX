@@ -40,6 +40,14 @@ export type ExportBundle = {
   feedback: DiagnosisFeedback[];
   quotes: CostQuote[];
   progress: RepairProgress[];
+  profile?: UserProfile;
+  usage?: UsageSummary;
+  support?: SupportMessage[];
+  preferences?: {
+    language: string;
+    currency: string;
+    theme: string;
+  };
 };
 
 export type SupportMessageInput = Omit<SupportMessage, 'id' | 'createdAt'>;

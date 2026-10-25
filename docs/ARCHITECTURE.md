@@ -43,14 +43,17 @@ SNAPFIX is designed around four constraints:
 `src/constants/config.ts` derives the mode from public environment variables:
 
 ```ts
-demoMode = !(supabaseUrl && supabaseAnonKey) || EXPO_PUBLIC_ENABLE_DEMO_MODE !== 'false';
+supabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+demoMode = !supabaseConfigured || EXPO_PUBLIC_ENABLE_DEMO_MODE === 'true';
 ```
 
 - **Demo mode** is the default when no Supabase credentials exist.
-- **Live mode** requires both Supabase public values and `EXPO_PUBLIC_ENABLE_DEMO_MODE=false`.
+- **Live mode** is the default when both Supabase public values are present. Set `EXPO_PUBLIC_ENABLE_DEMO_MODE=true` only to force the local demo.
 - The UI displays a demo banner whenever demo mode is active. Demo mode is a first-class, labelled evaluation path, not a hidden fallback.
 
-`AuthProvider` selects the auth service once at module load, then creates the matching repository after a session exists.
+`AuthProvider` selects the auth service once at module load, then creates the matching repository after a session exists. Sign-out and account deletion clear the per-user diagnosis draft, draft photos, and scheduled maintenance reminders.
+
+Analysis attempts are counted only after a successful analysis. A failed first analysis remains retryable, and a failed reassessment restores the previous completed result without consuming the reassessment allowance. The diagnosis screen applies a deterministic safety policy again before rendering server results.
 
 ## 4. Routing
 
@@ -63,6 +66,7 @@ Routes live in `src/app/`; non-route code stays outside it.
 /(auth)/sign-up
 /(auth)/forgot-password
 /reset-password           Supabase recovery callback
+/legal                    public terms and privacy summary
 /(tabs)                   home, history, maintenance, profile
 /diagnose                 photo + details form
 /diagnosis/[id]           analysis/result
@@ -73,6 +77,8 @@ Routes live in `src/app/`; non-route code stays outside it.
 /settings/subscription
 /settings/support
 /settings/privacy
+/settings/profile         display-name editing
+/settings/password        password change
 /+not-found
 ```
 
@@ -111,7 +117,7 @@ The deterministic analyzer (`src/services/demo/demoAnalyzer.ts`) generates local
 - creates signed URLs for display
 - calls the `analyze-diagnosis` Edge Function and waits for completion
 - never writes `analysis`, `safety_level`, `status`, or provider metadata directly; database triggers reject those client writes
-- exports a JSON bundle and deletes data/account through RLS-scoped queries and the delete-account function
+- exports a JSON bundle (including profile, usage, support messages, and preferences) and deletes data/account through RLS-scoped queries and the delete-account function
 
 ## 6. Diagnosis flow
 
@@ -167,13 +173,13 @@ The client also applies `applySafetyPolicy` as defence in depth when displaying 
   - remove all DIY repair options
   - remove unsafe steps from model output
 
-The server copy is authoritative; the client copy prevents a compromised or stale response from being displayed without escalation.
+The server copy is authoritative; the client copy prevents a compromised or stale response from being displayed without escalation. Rule-generated warning bodies and escalations are localized at render time, while model-generated content keeps the language requested when the analysis was created.
 
 See [AI_SAFETY.md](AI_SAFETY.md).
 
 ## 8. Cost architecture
 
-`src/domain/diagnosis/cost.ts` is pure and deterministic.
+`src/domain/diagnosis/cost.ts` is pure and deterministic. Assumptions are localized from structured reference data; the numeric range is unaffected by locale.
 
 Inputs:
 

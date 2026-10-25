@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
-import { AppText, Button, Card, DemoBanner, Screen, TextField } from '@/components/ui';
+import { AppText, Button, Card, DemoBanner, LegalLinks, Screen, TextField } from '@/components/ui';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useI18n } from '@/i18n';
 import { useAuth } from '@/providers/AuthProvider';
@@ -111,15 +111,17 @@ export default function SignInScreen() {
             loading={loading}
             icon="log-in-outline"
           />
-          <Pressable
-            accessibilityRole="link"
-            onPress={() => router.push('/(auth)/forgot-password')}
-            style={styles.center}
-          >
-            <AppText variant="label" color={theme.colors.brand}>
-              {t('auth.forgot_password')}
-            </AppText>
-          </Pressable>
+          {!appConfig.demoMode ? (
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => router.push('/(auth)/forgot-password')}
+              style={styles.center}
+            >
+              <AppText variant="label" color={theme.colors.brand}>
+                {t('auth.forgot_password')}
+              </AppText>
+            </Pressable>
+          ) : null}
         </Card>
 
         {appConfig.demoMode ? (
@@ -153,6 +155,7 @@ export default function SignInScreen() {
         <AppText variant="caption" color={theme.colors.textMuted} align="center">
           {t('auth.terms')}
         </AppText>
+        <LegalLinks />
       </Screen>
     </KeyboardAvoidingView>
   );

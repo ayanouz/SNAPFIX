@@ -34,7 +34,7 @@ import {
   useUsage,
 } from '@/hooks/queries';
 import type { DiagnosisAnalysis, RepairOption } from '@/domain/diagnosis/schema';
-import { applySafetyPolicy } from '@/domain/diagnosis/safety';
+import { applySafetyPolicy, safetyEscalationCode } from '@/domain/diagnosis/safety';
 import { PLAN_LIMITS } from '@/domain/usage';
 import {
   confidenceBand,
@@ -103,23 +103,50 @@ export default function DiagnosisScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const { session } = useAuth();
-  const diagnosis = useDiagnosis(id);
   const usage = useUsage();
   const start = useStartAnalysis();
   const reassess = useReassessDiagnosis();
   const setSaved = useSetSaved();
   const remove = useDeleteDiagnosis();
-  const triggered = useRef(false);
+  const triggered = useRef<string | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+  const [slow, setSlow] = useState(false);
+  const terminalStartError =
+    startError === 'quota_exceeded' ||
+    startError === 'rate_limited' ||
+    startError === 'not_found' ||
+    startError === 'invalid_input' ||
+    startError === 'unauthorized';
+  const diagnosis = useDiagnosis(id, { poll: !terminalStartError });
   const startAnalysis = start.mutate;
+
+  const reportStartFailure = (error: unknown) => {
+    const normalized = normalizeError(error);
+    setStartError(normalized.code);
+    void trackEvent(session?.user.id ?? null, 'diagnosis_failed', {
+      diagnosis_id: id ?? 'unknown',
+      code: normalized.code,
+    });
+  };
 
   useEffect(() => {
     if (!id) return;
-    if (diagnosis.data?.status === 'draft' && !triggered.current) {
-      triggered.current = true;
-      startAnalysis(id);
+    if (diagnosis.data?.status === 'draft' && triggered.current !== id) {
+      triggered.current = id;
+      setStartError(null);
+      startAnalysis(id, { onError: reportStartFailure });
     }
-  }, [diagnosis.data?.status, id, startAnalysis]);
+    // reportStartFailure is intentionally not a dependency: it only closes over
+    // stable state setters and the current session id.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [diagnosis.data?.status, id, startAnalysis, session?.user.id]);
+
+  useEffect(() => {
+    if (diagnosis.data?.status !== 'analyzing' && diagnosis.data?.status !== 'uploading') return;
+    const timer = setTimeout(() => setSlow(true), 90_000);
+    return () => clearTimeout(timer);
+  }, [diagnosis.data?.status]);
 
   if (!id) {
     return (
@@ -168,16 +195,25 @@ export default function DiagnosisScreen() {
   const reassessRemaining = Math.max(0, maxReassessments - reassessUsed);
 
   const retry = () => {
-    triggered.current = true;
-    start.mutate(record.id);
+    triggered.current = record.id;
+    setStartError(null);
+    setSlow(false);
+    start.mutate(record.id, { onError: reportStartFailure });
   };
 
   const toggleSaved = () => {
+    const nextSaved = !saved;
     setSaved.mutate(
-      { diagnosisId: record.id, saved: !saved },
-      { onError: () => Alert.alert(t('errors.title'), t('errors.unknown')) },
+      { diagnosisId: record.id, saved: nextSaved },
+      {
+        onSuccess: () => {
+          if (nextSaved) {
+            void trackEvent(session?.user.id ?? null, 'diagnosis_saved');
+          }
+        },
+        onError: () => Alert.alert(t('errors.title'), t('errors.unknown')),
+      },
     );
-    if (!saved) void trackEvent(session?.user.id ?? null, 'diagnosis_saved');
   };
 
   const share = async () => {
@@ -185,11 +221,15 @@ export default function DiagnosisScreen() {
     setSharing(true);
     try {
       const range = formatEstimateRange(analysis.estimate, language);
+      const escalationCode = safetyEscalationCode(analysis.safety);
+      const escalation = escalationCode
+        ? t(`safety.escalations.${escalationCode}`)
+        : (analysis.safety.escalation ?? t('safety.stop_guidance'));
       const text = [
         `${t('app.name')} — ${analysis.summary.headline}`,
         analysis.summary.plain_language,
         `${t('diagnosis.safety')}: ${t(`safety.risk_${analysis.safety.risk_level}`)}`,
-        analysis.safety.escalation ?? t('safety.stop_guidance'),
+        escalation,
         `${t('diagnosis.possible_causes')}:`,
         ...analysis.possible_causes.map((cause) => `• ${cause.title}`),
         `${t('diagnosis.next_steps')}:`,
@@ -216,10 +256,18 @@ export default function DiagnosisScreen() {
       {
         text: t('diagnosis.reassess'),
         onPress: () => {
-          triggered.current = true;
+          triggered.current = record.id;
+          setSlow(false);
           reassess.mutate(record.id, {
-            onError: (error) =>
-              Alert.alert(t('errors.title'), t(`errors.${normalizeError(error).code}`)),
+            onError: (error) => {
+              const normalized = normalizeError(error);
+              void trackEvent(session?.user.id ?? null, 'diagnosis_failed', {
+                diagnosis_id: record.id,
+                code: normalized.code,
+                reassessment: true,
+              });
+              Alert.alert(t('errors.title'), t(`errors.${normalized.code}`));
+            },
           });
         },
       },
@@ -265,6 +313,23 @@ export default function DiagnosisScreen() {
             </View>
           ))}
         </View>
+        {slow ? (
+          <>
+            <AppText variant="caption" color={theme.colors.warning} align="center">
+              {t('diagnosis.analyzing_slow')}
+            </AppText>
+            <Button
+              label={t('diagnosis.delete')}
+              icon="trash-outline"
+              variant="ghost"
+              onPress={confirmDelete}
+              loading={remove.isPending}
+            />
+          </>
+        ) : null}
+        <AppText variant="caption" color={theme.colors.textMuted} align="center">
+          {t('diagnosis.analyzing_leave')}
+        </AppText>
       </Card>
       <Card tone="warning" style={styles.sectionCard}>
         <AppText variant="caption" color={theme.colors.warning}>
@@ -274,29 +339,40 @@ export default function DiagnosisScreen() {
     </>
   );
 
-  const renderFailed = () => (
-    <Card tone="danger" style={styles.sectionCard}>
-      <View style={[styles.inline, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <Ionicons name="alert-circle-outline" size={24} color={theme.colors.danger} />
-        <AppText variant="title" color={theme.colors.danger} style={styles.flex}>
-          {t('diagnosis.failed_title')}
-        </AppText>
-      </View>
-      <AppText variant="body">{t('diagnosis.failed_body')}</AppText>
-      {record.failureCode ? (
-        <AppText variant="caption" color={theme.colors.textMuted}>
-          {t(`errors.${record.failureCode}`)}
-        </AppText>
-      ) : null}
-      <Button
-        label={t('diagnosis.retry_analysis')}
-        icon="refresh"
-        variant="secondary"
-        onPress={retry}
-        loading={start.isPending}
-      />
-    </Card>
-  );
+  const renderFailed = () => {
+    const failureCode =
+      record.failureCode ?? startError ?? (start.error ? normalizeError(start.error).code : null);
+    return (
+      <Card tone="danger" style={styles.sectionCard}>
+        <View style={[styles.inline, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Ionicons name="alert-circle-outline" size={24} color={theme.colors.danger} />
+          <AppText variant="title" color={theme.colors.danger} style={styles.flex}>
+            {t('diagnosis.failed_title')}
+          </AppText>
+        </View>
+        <AppText variant="body">{t('diagnosis.failed_body')}</AppText>
+        {failureCode ? (
+          <AppText variant="caption" color={theme.colors.textMuted}>
+            {t(`errors.${failureCode}`)}
+          </AppText>
+        ) : null}
+        <Button
+          label={t('diagnosis.retry_analysis')}
+          icon="refresh"
+          variant="secondary"
+          onPress={retry}
+          loading={start.isPending}
+        />
+        <Button
+          label={t('diagnosis.delete')}
+          icon="trash-outline"
+          variant="ghost"
+          onPress={confirmDelete}
+          loading={remove.isPending}
+        />
+      </Card>
+    );
+  };
 
   const renderAnalysis = () => {
     if (!analysis) {
@@ -684,8 +760,11 @@ export default function DiagnosisScreen() {
         }
       />
 
-      {record.status === 'analyzing' || record.status === 'draft' ? renderAnalyzing() : null}
-      {record.status === 'failed' ? renderFailed() : null}
+      {record.status === 'analyzing' || record.status === 'uploading' ? renderAnalyzing() : null}
+      {record.status === 'draft' && !startError ? renderAnalyzing() : null}
+      {record.status === 'failed' || (record.status === 'draft' && startError)
+        ? renderFailed()
+        : null}
       {record.status === 'completed' ? renderAnalysis() : null}
     </Screen>
   );

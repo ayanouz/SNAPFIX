@@ -1,20 +1,38 @@
+import { useEffect } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { AppText, Badge, Button, Card, LoadingView, Screen, ScreenHeader } from '@/components/ui';
+import {
+  AppText,
+  Badge,
+  Button,
+  Card,
+  ErrorState,
+  LoadingView,
+  Screen,
+  ScreenHeader,
+} from '@/components/ui';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useI18n } from '@/i18n';
 import { useUsage } from '@/hooks/queries';
+import { useAuth } from '@/providers/AuthProvider';
 import { usePreferencesStore } from '@/stores/preferences';
 import { formatCurrency } from '@/utils/format';
+import { PLAN_LIMITS } from '@/domain/usage';
+import { trackEvent } from '@/services/analytics';
 
 export default function SubscriptionScreen() {
   const { theme } = useTheme();
   const { t, language, isRTL } = useI18n();
   const router = useRouter();
   const usage = useUsage();
+  const { session } = useAuth();
   const currency = usePreferencesStore((state) => state.currency);
   const isPremium = usage.data?.plan === 'premium';
+
+  useEffect(() => {
+    void trackEvent(session?.user.id ?? null, 'subscription_screen_viewed');
+  }, [session?.user.id]);
 
   const showBillingUnavailable = () => {
     Alert.alert(
@@ -35,6 +53,15 @@ export default function SubscriptionScreen() {
       <Screen>
         <ScreenHeader title={t('subscription.title')} back />
         <LoadingView />
+      </Screen>
+    );
+  }
+
+  if (usage.isError) {
+    return (
+      <Screen>
+        <ScreenHeader title={t('subscription.title')} back />
+        <ErrorState error={usage.error} onRetry={() => void usage.refetch()} />
       </Screen>
     );
   }
@@ -98,15 +125,17 @@ export default function SubscriptionScreen() {
         <AppText variant="caption" color={theme.colors.textMuted}>
           {t('subscription.usage_this_month', {
             used: usage.data?.used ?? 0,
-            limit: usage.data?.limit ?? 5,
+            limit: usage.data?.limit ?? PLAN_LIMITS.free.diagnosesPerMonth,
           })}
         </AppText>
-        <View style={[styles.priceRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <AppText variant="title">{formatCurrency(0, currency, language)}</AppText>
-          <AppText variant="caption" color={theme.colors.textMuted}>
-            {t('subscription.free_title')}
-          </AppText>
-        </View>
+        {!isPremium ? (
+          <View style={[styles.priceRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <AppText variant="title">{formatCurrency(0, currency, language)}</AppText>
+            <AppText variant="caption" color={theme.colors.textMuted}>
+              {t('subscription.free_title')}
+            </AppText>
+          </View>
+        ) : null}
       </Card>
 
       <Card tone="warning" style={styles.billingCard}>

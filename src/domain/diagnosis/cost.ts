@@ -68,10 +68,50 @@ function scoreReference(reference: PriceReference, causeText: string): number {
   }, 0);
 }
 
+function localizedAssumptions(reference: PriceReference, locale = 'en'): string[] {
+  const yes = locale === 'fr' ? 'oui' : locale === 'ar' ? 'نعم' : 'yes';
+  const no = locale === 'fr' ? 'non' : locale === 'ar' ? 'لا' : 'no';
+  const parts = reference.includesParts ? yes : no;
+  const labor = reference.includesLabor ? yes : no;
+
+  if (locale === 'fr') {
+    const result = [
+      `Réparation de référence : ${reference.partName}.`,
+      `Pièces incluses : ${parts} ; main-d’œuvre incluse : ${labor}.`,
+      `Région : ${reference.region}.`,
+      'Il s’agit d’une fourchette fondée sur des données de référence vérifiées, pas d’un devis ferme. L’accès local, les taxes et les frais de diagnostic peuvent varier.',
+    ];
+    if (!reference.includesLabor)
+      result.push('La main-d’œuvre n’est pas incluse dans cette fourchette.');
+    return result;
+  }
+
+  if (locale === 'ar') {
+    const result = [
+      `الإصلاح المرجعي: ${reference.partName}.`,
+      `القطع مشمولة: ${parts}؛ العمل مشمول: ${labor}.`,
+      `المنطقة: ${reference.region}.`,
+      'هذا نطاق مبني على بيانات مرجعية موثقة وليس عرض سعر ملزماً. قد تختلف تكاليف الوصول والضرائب ورسوم التشخيص محلياً.',
+    ];
+    if (!reference.includesLabor) result.push('لا يشمل هذا النطاق أجرة العمل.');
+    return result;
+  }
+
+  const result = [
+    `Reference repair: ${reference.partName}.`,
+    `Includes parts: ${parts}; includes labour: ${labor}.`,
+    `Region: ${reference.region}.`,
+    'This is a range based on verified reference data, not a binding quote. Local access, taxes, and diagnosis fees may differ.',
+  ];
+  if (!reference.includesLabor) result.push('Labour is not included in this range.');
+  return result;
+}
+
 export function estimateRepair(input: {
   analysis: DiagnosisAnalysis;
   currency: string;
   region: string;
+  locale?: string;
   references: PriceReference[];
   now?: Date;
 }): Estimate {
@@ -127,18 +167,7 @@ export function estimateRepair(input: {
     return unavailableEstimate(currency, ESTIMATE_REASONS.noVerifiedPricing);
   }
 
-  const assumptions = [
-    `Reference repair: ${reference.partName}.`,
-    `Includes parts: ${reference.includesParts ? 'yes' : 'no'}; includes labour: ${
-      reference.includesLabor ? 'yes' : 'no'
-    }.`,
-    `Region: ${reference.region}.`,
-    'This is a range based on verified reference data, not a binding quote. Local access, taxes, and diagnosis fees may differ.',
-  ];
-
-  if (!reference.includesLabor) {
-    assumptions.push('Labour is not included in this range.');
-  }
+  const assumptions = localizedAssumptions(reference, input.locale);
 
   return {
     status: 'available',

@@ -84,6 +84,8 @@ When `professional_required` is true, `applySafetyPolicy`:
 - preserves the most relevant hazard escalation message
 - adds photo/estimate limitations
 
+Rule-generated warning bodies and escalations are localized at render time in English, French, and Arabic. Model-generated text is requested in the user's locale, but stored analyses keep the language they were generated in. The client re-applies the deterministic safety policy before rendering, so stale or altered server output still receives localized stop guidance.
+
 The final Zod schema independently rejects contradictory output, such as `professional_required: true` with a `diy` verdict.
 
 ## 4. Unsafe-instruction detection
@@ -136,6 +138,7 @@ The model is explicitly excluded from pricing.
 - `estimateRepair` requires a recent (≤365 days), verified reference matching category, currency, region, and cause keywords.
 - No match → `status: "unavailable"` with `no_verified_local_pricing`, `no_pricing_in_currency`, `insufficient_detail`, or `professional_quote_required`.
 - Available estimates include source name, verification date, parts/labor flags, assumptions, and a confidence band.
+- Assumptions are localized server-side for English, French, and Arabic without changing the numeric range.
 - The UI always labels a range as a non-binding estimate, not a quote.
 - Quote comparison uses only user-entered quotes and refuses cross-currency savings.
 

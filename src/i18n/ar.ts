@@ -42,6 +42,7 @@ export const ar: Record<TranslationKey, string> = {
   'errors.quota_exceeded': 'لقد وصلت إلى الحد الشهري للتشخيصات. قم بالترقية أو انتظر الشهر التالي.',
   'errors.ai_not_configured': 'خدمة التحليل غير مهيأة بعد. اتصل بالدعم.',
   'errors.ai_failed': 'تعذّرت على خدمة التحليل إكمال الطلب. أعد المحاولة.',
+  'errors.analysis_failed': 'لم يكتمل التحليل. أعد المحاولة.',
   'errors.invalid_input': 'تحقق من المعلومات التي أدخلتها.',
   'errors.not_found': 'هذا العنصر لم يعد موجوداً.',
   'errors.storage_failed': 'تعذّر حفظ الصورة. أعد المحاولة.',
@@ -107,6 +108,7 @@ export const ar: Record<TranslationKey, string> = {
     'سيؤدي هذا إلى حذف تشخيصاتك وصورك ومهام الصيانة وملاحظاتك وحسابك. لا يمكن التراجع عن ذلك.',
   'auth.recovery_invalid': 'رابط الاسترداد هذا غير صالح أو منتهي الصلاحية.',
   'auth.password_hint': '8 أحرف على الأقل، بما فيها حرف ورقم.',
+  'auth.password_mismatch': 'كلمتا المرور غير متطابقتين.',
 
   'tabs.home': 'الرئيسية',
   'tabs.history': 'السجل',
@@ -183,6 +185,9 @@ export const ar: Record<TranslationKey, string> = {
   'diagnosis.analyzing_step1': 'فحص الصور والوصف',
   'diagnosis.analyzing_step2': 'فصل الملاحظات عن الأسباب المحتملة',
   'diagnosis.analyzing_step3': 'تطبيق قواعد السلامة المستقلة',
+  'diagnosis.analyzing_slow':
+    'يستغرق هذا وقتاً أطول من المعتاد. يمكنك إبقاء هذه الشاشة مفتوحة أو العودة لاحقاً.',
+  'diagnosis.analyzing_leave': 'يمكنك مغادرة هذه الشاشة. يستمر التقييم في الخلفية.',
   'diagnosis.failed_title': 'لم يكتمل التقييم',
   'diagnosis.failed_body': 'تم حفظ صورك ووصفك. يمكنك محاولة التحليل مرة أخرى.',
   'diagnosis.retry_analysis': 'إعادة محاولة التقييم',
@@ -294,6 +299,50 @@ export const ar: Record<TranslationKey, string> = {
   'safety.warnings.uncertain_evidence': 'أدلة محدودة',
   'safety.warnings.photo_limitation': 'قيود الصورة',
   'safety.warnings.demo_mode': 'الوضع التجريبي',
+  'safety.warning_bodies.gas_leak':
+    'قد تكون رائحة الغاز أو تسربه حالة طارئة. لا تشغّل المفاتيح، ولا تشعل اللهب، ولا تحاول الإصلاح.',
+  'safety.warning_bodies.carbon_monoxide':
+    'قد يكون أول أكسيد الكربون موجوداً. هذه حالة طارئة تهدد الحياة وليست مهمة إصلاح.',
+  'safety.warning_bodies.fire_smoke':
+    'تم ذكر حريق أو لهب أو دخان. أوقف أعمال الإصلاح وأعطِ الأولوية للإخلاء وطلب المساعدة الطارئة.',
+  'safety.warning_bodies.electrical_hazard':
+    'قد يكون هناك خطر كهربائي. لا تلمس الموصلات المكشوفة ولا تعمل على معدات تحت الجهد.',
+  'safety.warning_bodies.structural_hazard':
+    'قد يكون هناك تلف إنشائي. لا يمكن تقييمه بأمان من صورة فقط.',
+  'safety.warning_bodies.chemical_hazard':
+    'قد يكون هناك تعرض كيميائي. تجنب استنشاق الأبخرة أو خلط المواد، ولا تتابع الإصلاحات.',
+  'safety.warning_bodies.pressure_system':
+    'قد تُطلق أنظمة الضغط أو الماء الساخن ماءً حارقاً أو بخاراً.',
+  'safety.warning_bodies.vehicle_safety':
+    'أعطال الفرامل أو التوجيه أو الوسائد الهوائية أنظمة سلامة حرجة في المركبة.',
+  'safety.warning_bodies.high_voltage':
+    'قد تحتفظ هذه المعدات بجهد عالٍ خطير حتى بعد فصلها عن الكهرباء.',
+  'safety.warning_bodies.unsafe_instruction_removed':
+    'تمت إزالة بعض التعليمات غير الآمنة من رد الذكاء الاصطناعي. لا تحاول إجراءات تتجاوز أجهزة السلامة.',
+  'safety.warning_bodies.professional_required':
+    'يجب فحص هذه الحالة بواسطة فني مؤهل. لن يقدم SNAPFIX خطوات إصلاح ذاتي لها.',
+  'safety.warning_bodies.uncertain_evidence':
+    'الأدلة المتاحة محدودة، لذا فإن الأسباب المحتملة أدناه فرضيات وليست تشخيصاً مؤكداً.',
+  'safety.warning_bodies.photo_limitation':
+    'لا يمكن للصورة تأكيد عطل مخفي أو رمز خطأ أو الجزء الذي تعطل بالتحديد.',
+  'safety.warning_bodies.demo_mode':
+    'الوضع التجريبي: هذا الإرشاد مبني على وصفك وقواعد سلامة محددة. لا يعمل أي نموذج لتحليل الصور.',
+  'safety.escalations.gas_leak':
+    'اترك المنطقة، وتجنب اللهب والمفاتيح الكهربائية، وافتح التهوية فقط إذا كان ذلك آمناً، واتصل بمورد الغاز أو خدمات الطوارئ من مكان آمن.',
+  'safety.escalations.carbon_monoxide':
+    'انقل الجميع إلى هواء نقي، واتصل بخدمات الطوارئ، ولا تعد إلى المكان حتى يؤكد المختصون أنه آمن.',
+  'safety.escalations.fire_smoke':
+    'أخلِ المكان، واتصل بخدمات الطوارئ، ولا تستخدم الماء على الحرائق الكهربائية. استخدم طفاية مناسبة فقط إذا كان ذلك آمناً.',
+  'safety.escalations.electrical_hazard':
+    'اقطع الطاقة من القاطع الرئيسي فقط إذا كان بإمكانك ذلك دون لمس الأسلاك التالفة. أبعد الآخرين واتصل بفني كهرباء مؤهل.',
+  'safety.escalations.high_voltage': 'لا تفتح الغلاف. تتطلب مكونات الجهد العالي فنياً مؤهلاً.',
+  'safety.escalations.structural_hazard':
+    'أبعد الأشخاص عن المنطقة المتأثرة واتصل بمهندس إنشائي مؤهل أو مدير المبنى.',
+  'safety.escalations.chemical_hazard':
+    'افتح التهوية فقط إذا كان ذلك آمناً، واترك المنطقة، واتصل بمركز السموم أو خدمات الطوارئ إذا تعرض أي شخص.',
+  'safety.escalations.pressure_system':
+    'لا تفتح النظام. اعزله فقط عبر تحكم خارجي آمن واتصل بسباك أو فني تدفئة مؤهل.',
+  'safety.escalations.vehicle_safety': 'لا تقُد المركبة. رتّب فحصاً مهنياً أو خدمة سحب.',
 
   'estimate.title': 'تقدير التكلفة',
   'estimate.available': 'نطاق مرجعي',
@@ -320,6 +369,7 @@ export const ar: Record<TranslationKey, string> = {
   'repair.completed_body': 'إذا عادت المشكلة أو شعرت بأي خطر، توقف واتصل بفني مؤهل.',
   'repair.save_progress': 'حفظ التقدم',
   'repair.progress_saved': 'تم حفظ التقدم.',
+  'repair.progress_save_failed': 'تعذّر حفظ تقدمك. تحقق من اتصالك ثم أعد المحاولة.',
   'repair.tools': 'الأدوات',
   'repair.materials': 'المواد',
   'repair.warning': 'تحذير',
@@ -384,6 +434,10 @@ export const ar: Record<TranslationKey, string> = {
   'maintenance.notification_body': 'فعّل الإشعارات في إعدادات النظام لتلقي التذكيرات.',
   'maintenance.notification_scheduled': 'تم جدولة التذكير.',
   'maintenance.notification_error': 'تعذّرت جدولة التذكير.',
+  'maintenance.reminder_web_title': 'التذكيرات تحتاج إلى تطبيق الهاتف',
+  'maintenance.reminder_web_body':
+    'الإشعارات المجدولة غير متاحة في معاينة الويب. ستُحفظ مهمتك دون تذكير.',
+  'maintenance.reminder_web_unavailable': 'التذكيرات المجدولة متاحة في تطبيق iOS وAndroid.',
   'maintenance.form_title': 'مهمة صيانة جديدة',
   'maintenance.edit_title': 'تعديل مهمة الصيانة',
   'maintenance.item': 'العنصر',
@@ -412,6 +466,12 @@ export const ar: Record<TranslationKey, string> = {
 
   'profile.title': 'الملف الشخصي',
   'profile.account': 'الحساب',
+  'profile.account_settings': 'إعدادات الحساب',
+  'profile.edit_profile': 'تعديل الملف الشخصي',
+  'profile.display_name': 'الاسم المعروض',
+  'profile.email': 'البريد الإلكتروني',
+  'profile.saved': 'تم حفظ الملف الشخصي.',
+  'profile.change_password': 'تغيير كلمة المرور',
   'profile.plan': 'الخطة',
   'profile.plan_free': 'مجانية',
   'profile.plan_premium': 'مميزة',
@@ -441,6 +501,24 @@ export const ar: Record<TranslationKey, string> = {
   'profile.legal': 'قانوني',
   'profile.terms': 'شروط الاستخدام',
   'profile.privacy_policy': 'سياسة الخصوصية',
+  'legal.title': 'الشروط والخصوصية',
+  'legal.intro':
+    'يساعدك SNAPFIX على تنظيم الملاحظات ومعرفة متى تتوقف وتتصل بفني مؤهل. وهو ليس بديلاً عن الفحص أو الاختبار أو الإصلاح المهني.',
+  'legal.terms_title': 'شروط الاستخدام',
+  'legal.terms_body':
+    'استخدم SNAPFIX كأداة فرز أولي فقط. لا تعتمد عليه في حالة الطوارئ، ولا تتجاهل إرشادات السلامة أبداً. لا يضمن SNAPFIX تشخيصاً أو نتيجة إصلاح أو سعراً. أنت مسؤول عن المعلومات التي ترسلها وعن الامتثال للقانون المعمول به. الاشتراكات، إن وُفرت، يفوترها متجر التطبيقات ويمكن إدارتها من حساب المتجر. قد نحدّث هذه الشروط؛ واستمرار الاستخدام يعني قبول الشروط المحدّثة.',
+  'legal.privacy_title': 'ملخص الخصوصية',
+  'legal.privacy_body':
+    'يخزّن الوضع التجريبي البيانات على هذا الجهاز ولا يستدعي خدمة ذكاء اصطناعي. يخزّن الوضع المباشر بيانات الحساب في Supabase ويرسل الوصف والصور المختارة إلى مزوّد الذكاء الاصطناعي المهيأ للتحليل. نحن لا نبيع البيانات الشخصية. يمكنك تصدير بياناتك أو حذفها من التطبيق. راجع شاشة الخصوصية للشرح الكامل.',
+  'legal.last_updated': 'آخر تحديث: أكتوبر 2026',
+  'legal.contact': 'أسئلة حول هذه الشروط أو بياناتك: {email}',
+  'legal.terms_short': 'شروط الاستخدام',
+  'legal.privacy_short': 'الخصوصية',
+  'network.offline_title': 'أنت غير متصل',
+  'network.offline_body':
+    'لا يزال الوضع التجريبي يعمل. يحتاج التحليل المباشر والمزامنة والتصدير السحابي إلى اتصال.',
+  'network.online_title': 'عدت إلى الاتصال',
+  'network.dismiss': 'إغلاق',
   'profile.delete_account_note':
     'حذف الحساب يزيل الحساب وبياناته السحابية. تُزال بيانات العرض التجريبي المحلية من هذا الجهاز.',
 

@@ -21,7 +21,7 @@ export function ScreenHeader({
   large = false,
 }: ScreenHeaderProps) {
   const { theme } = useTheme();
-  const { isRTL } = useI18n();
+  const { t, isRTL } = useI18n();
   const router = useRouter();
 
   return (
@@ -30,7 +30,7 @@ export function ScreenHeader({
         {back ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Back"
+            accessibilityLabel={t('common.back')}
             hitSlop={12}
             onPress={() => {
               if (router.canGoBack()) router.back();

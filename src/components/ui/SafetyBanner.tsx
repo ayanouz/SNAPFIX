@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { DiagnosisAnalysis } from '@/domain/diagnosis/schema';
+import { safetyEscalationCode } from '@/domain/diagnosis/safety';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useI18n } from '@/i18n';
 import { AppText } from './AppText';
@@ -25,6 +26,10 @@ export function SafetyBanner({ safety, compact = false }: SafetyBannerProps) {
     critical: { fg: theme.colors.critical, bg: theme.colors.criticalSoft, icon: 'skull-outline' },
   } as const;
   const colors = palette[level];
+  const escalationCode = safetyEscalationCode(safety);
+  const escalationText = escalationCode
+    ? t(`safety.escalations.${escalationCode}`)
+    : safety.escalation;
 
   return (
     <View
@@ -67,7 +72,9 @@ export function SafetyBanner({ safety, compact = false }: SafetyBannerProps) {
                   {t(`safety.warnings.${warning.code}`)}
                 </AppText>
                 <AppText variant="caption" color={theme.colors.textMuted}>
-                  {warning.message}
+                  {warning.source === 'rule'
+                    ? t(`safety.warning_bodies.${warning.code}`)
+                    : warning.message}
                 </AppText>
               </View>
             </View>
@@ -75,13 +82,13 @@ export function SafetyBanner({ safety, compact = false }: SafetyBannerProps) {
         </View>
       ) : null}
 
-      {safety.escalation ? (
+      {escalationText ? (
         <View style={[styles.escalation, { borderTopColor: colors.fg }]}>
           <AppText variant="label" color={colors.fg}>
             {t('diagnosis.escalation')}
           </AppText>
           <AppText variant="body" color={theme.colors.text}>
-            {safety.escalation}
+            {escalationText}
           </AppText>
         </View>
       ) : null}

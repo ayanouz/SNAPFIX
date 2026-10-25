@@ -8,7 +8,7 @@ import { AppText } from './AppText';
 
 export function DemoBanner() {
   const { theme } = useTheme();
-  const { t } = useI18n();
+  const { t, isRTL } = useI18n();
   const { repository } = useAuth();
   const isDemo = (repository?.mode ?? (appConfig.demoMode ? 'demo' : 'live')) === 'demo';
 
@@ -22,6 +22,7 @@ export function DemoBanner() {
           backgroundColor: theme.colors.warningSoft,
           borderColor: theme.colors.warning,
           borderRadius: theme.radii.md,
+          flexDirection: isRTL ? 'row-reverse' : 'row',
         },
       ]}
     >

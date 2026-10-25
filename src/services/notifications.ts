@@ -73,3 +73,12 @@ export async function cancelMaintenanceReminder(notificationId: string | null): 
     // A missing notification is not an error the user needs to see.
   }
 }
+
+export async function cancelAllMaintenanceReminders(): Promise<void> {
+  if (Platform.OS === 'web') return;
+  try {
+    await Notifications.cancelAllScheduledNotificationsAsync();
+  } catch {
+    // Notification cleanup must never block sign-out or account deletion.
+  }
+}

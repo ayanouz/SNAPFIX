@@ -523,6 +523,26 @@ export function riskDescriptionKey(level: SafetyLevel): string {
   return `safety.risk_${level}`;
 }
 
+export const SAFETY_ESCALATION_CODES: WarningCode[] = [
+  'gas_leak',
+  'carbon_monoxide',
+  'fire_smoke',
+  'electrical_hazard',
+  'high_voltage',
+  'structural_hazard',
+  'chemical_hazard',
+  'pressure_system',
+  'vehicle_safety',
+];
+
+export function safetyEscalationCode(safety: DiagnosisAnalysis['safety']): WarningCode | null {
+  return (
+    safety.warnings.find(
+      (warning) => warning.source === 'rule' && SAFETY_ESCALATION_CODES.includes(warning.code),
+    )?.code ?? null
+  );
+}
+
 export const SAFETY_WARNING_I18N: Record<WarningCode, string> = {
   gas_leak: 'safety.warnings.gas_leak',
   carbon_monoxide: 'safety.warnings.carbon_monoxide',

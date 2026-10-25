@@ -14,6 +14,8 @@ import type {
   UserProfile,
 } from '@/domain/diagnosis/types';
 import { useAuth } from '@/providers/AuthProvider';
+import { clearLocalUserState } from '@/services/localState';
+import { clearUserImages } from '@/services/storage/imageService';
 import type {
   CreateMaintenanceInput,
   DataRepository,
@@ -98,13 +100,14 @@ export function useDiagnosisHistory(query: HistoryQuery) {
   });
 }
 
-export function useDiagnosis(diagnosisId: string | undefined) {
+export function useDiagnosis(diagnosisId: string | undefined, options?: { poll?: boolean }) {
   const { repository, session } = useAuth();
   return useQuery({
     queryKey: ['diagnosis', diagnosisId],
     queryFn: () => run(() => requireRepository(repository).getDiagnosis(diagnosisId ?? '')),
     enabled: Boolean(repository && session && diagnosisId),
     refetchInterval: (query) => {
+      if (options?.poll === false) return false;
       const status = query.state.data?.status;
       return status === 'analyzing' || status === 'uploading' || status === 'draft' ? 2500 : false;
     },
@@ -361,11 +364,13 @@ export function useSendSupportMessage() {
 }
 
 export function useDeleteAllData() {
-  const { repository } = useAuth();
+  const { repository, session } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => run(() => requireRepository(repository).deleteAllData()),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await clearLocalUserState();
+      if (session?.user.id) clearUserImages(session.user.id);
       queryClient.clear();
     },
   });

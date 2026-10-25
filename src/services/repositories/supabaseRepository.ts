@@ -22,6 +22,7 @@ import type {
   NewDiagnosisInput,
   RepairGuide,
   RepairProgress,
+  SupportMessage,
   UsageSummary,
   UserProfile,
 } from '@/domain/diagnosis/types';
@@ -138,6 +139,15 @@ type ProgressRow = {
   current_step: number;
   completed_at: string | null;
   updated_at: string;
+};
+
+type SupportRow = {
+  id: string;
+  category: SupportMessage['category'];
+  message: string;
+  email: string | null;
+  diagnosis_id: string | null;
+  created_at: string;
 };
 
 type GuideRow = {
@@ -312,6 +322,17 @@ function mapProgress(row: ProgressRow): RepairProgress {
   };
 }
 
+function mapSupport(row: SupportRow): SupportMessage {
+  return {
+    id: row.id,
+    category: row.category,
+    message: row.message,
+    email: row.email,
+    diagnosisId: row.diagnosis_id,
+    createdAt: row.created_at,
+  };
+}
+
 function mapGuide(row: GuideRow): RepairGuide {
   const metadata = row.safety_metadata as { warnings?: SafetyWarning[] } | null;
   return {
@@ -426,6 +447,31 @@ export function createSupabaseRepository(options: SupabaseRepositoryOptions): Da
     return 'premium';
   }
 
+  async function loadUsageSummary(supabase: SupabaseClient): Promise<UsageSummary> {
+    const plan = await planForUser(supabase);
+    const period = currentMonthPeriod(now());
+    const { count, error } = await supabase
+      .from('usage_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('event_type', 'diagnosis_used')
+      .gte('created_at', period.start.toISOString())
+      .lt('created_at', period.end.toISOString());
+    if (error) fail(error, 'Usage could not be loaded');
+    const summary = usageSummary(plan, count ?? 0, now());
+    return {
+      plan: summary.plan,
+      used: summary.used,
+      limit: summary.limit,
+      remaining: summary.remaining,
+      periodStart: summary.periodStart,
+      periodEnd: summary.periodEnd,
+      historyLimit: summary.historyLimit,
+      maxPhotos: summary.maxPhotos,
+      maxReassessments: summary.maxReassessments,
+    };
+  }
+
   async function getDiagnosisById(diagnosisId: string): Promise<DiagnosisRecord> {
     const supabase = client();
     const { data, error } = await supabase
@@ -504,12 +550,6 @@ export function createSupabaseRepository(options: SupabaseRepositoryOptions): Da
       if (input.imageUris.length === 0) {
         throw new AppError('invalid_input', 'At least one photo is required');
       }
-      if (input.imageUris.length > PLAN_LIMITS.premium.maxPhotos) {
-        throw new AppError(
-          'invalid_input',
-          `Attach at most ${PLAN_LIMITS.premium.maxPhotos} photos`,
-        );
-      }
       if (input.description.trim().length < 10) {
         throw new AppError('invalid_input', 'Describe the problem in at least 10 characters');
       }
@@ -522,6 +562,12 @@ export function createSupabaseRepository(options: SupabaseRepositoryOptions): Da
         .eq('user_id', userId)
         .maybeSingle();
       if (existing) return getDiagnosisById(input.id);
+
+      const plan = await planForUser(supabase);
+      const maxPhotos = PLAN_LIMITS[plan].maxPhotos;
+      if (input.imageUris.length > maxPhotos) {
+        throw new AppError('invalid_input', `Attach at most ${maxPhotos} photos`);
+      }
 
       const { error: insertError } = await supabase.from('diagnoses').insert({
         id: input.id,
@@ -538,6 +584,7 @@ export function createSupabaseRepository(options: SupabaseRepositoryOptions): Da
       });
       if (insertError) fail(insertError, 'The diagnosis could not be created');
 
+      const uploadedPaths: string[] = [];
       try {
         for (let index = 0; index < input.imageUris.length; index += 1) {
           const uri = input.imageUris[index];
@@ -558,6 +605,7 @@ export function createSupabaseRepository(options: SupabaseRepositoryOptions): Da
             .from('diagnosis-images')
             .upload(path, body, { contentType: 'image/jpeg', upsert: false });
           if (uploadError) fail(uploadError, 'The photo could not be uploaded');
+          uploadedPaths.push(path);
 
           const { error: imageError } = await supabase.from('diagnosis_images').insert({
             diagnosis_id: input.id,
@@ -570,6 +618,9 @@ export function createSupabaseRepository(options: SupabaseRepositoryOptions): Da
           if (imageError) fail(imageError, 'The photo could not be attached');
         }
       } catch (error) {
+        if (uploadedPaths.length > 0) {
+          await supabase.storage.from('diagnosis-images').remove(uploadedPaths);
+        }
         await supabase.from('diagnoses').delete().eq('id', input.id).eq('user_id', userId);
         throw error instanceof AppError ? error : fail(error, 'The diagnosis could not be created');
       }
@@ -673,14 +724,18 @@ export function createSupabaseRepository(options: SupabaseRepositoryOptions): Da
 
     async deleteDiagnosis(diagnosisId: string): Promise<void> {
       const supabase = client();
-      const { data: images } = await supabase
+      const { data: images, error: imagesError } = await supabase
         .from('diagnosis_images')
         .select('storage_path')
         .eq('diagnosis_id', diagnosisId)
         .eq('user_id', userId);
+      if (imagesError) fail(imagesError, 'The diagnosis could not be deleted');
       const paths = (images ?? []).map((image) => image.storage_path as string).filter(Boolean);
       if (paths.length > 0) {
-        await supabase.storage.from('diagnosis-images').remove(paths);
+        const { error: storageError } = await supabase.storage
+          .from('diagnosis-images')
+          .remove(paths);
+        if (storageError) fail(storageError, 'The diagnosis could not be deleted');
       }
       const { error } = await supabase
         .from('diagnoses')
@@ -808,29 +863,7 @@ export function createSupabaseRepository(options: SupabaseRepositoryOptions): Da
     },
 
     async getUsage(): Promise<UsageSummary> {
-      const supabase = client();
-      const plan = await planForUser(supabase);
-      const period = currentMonthPeriod(now());
-      const { count, error } = await supabase
-        .from('usage_events')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('event_type', 'diagnosis_used')
-        .gte('created_at', period.start.toISOString())
-        .lt('created_at', period.end.toISOString());
-      if (error) fail(error, 'Usage could not be loaded');
-      const summary = usageSummary(plan, count ?? 0, now());
-      return {
-        plan: summary.plan,
-        used: summary.used,
-        limit: summary.limit,
-        remaining: summary.remaining,
-        periodStart: summary.periodStart,
-        periodEnd: summary.periodEnd,
-        historyLimit: summary.historyLimit,
-        maxPhotos: summary.maxPhotos,
-        maxReassessments: summary.maxReassessments,
-      };
+      return loadUsageSummary(client());
     },
 
     async listQuotes(diagnosisId: string): Promise<CostQuote[]> {
@@ -1027,14 +1060,25 @@ export function createSupabaseRepository(options: SupabaseRepositoryOptions): Da
 
     async exportUserData(): Promise<ExportBundle> {
       const supabase = client();
-      const [diagnoses, maintenance, feedback, quotes, progress] = await Promise.all([
-        supabase.from('diagnoses').select(DIAGNOSIS_SELECT).eq('user_id', userId),
-        supabase.from('maintenance_tasks').select('*').eq('user_id', userId),
-        supabase.from('diagnosis_feedback').select('*').eq('user_id', userId),
-        supabase.from('cost_quotes').select('*').eq('user_id', userId),
-        supabase.from('repair_progress').select('*').eq('user_id', userId),
-      ]);
-      if (diagnoses.error) fail(diagnoses.error, 'Your data could not be exported');
+      const [diagnoses, maintenance, feedback, quotes, progress, support, profile, usage] =
+        await Promise.all([
+          supabase.from('diagnoses').select(DIAGNOSIS_SELECT).eq('user_id', userId),
+          supabase.from('maintenance_tasks').select('*').eq('user_id', userId),
+          supabase.from('diagnosis_feedback').select('*').eq('user_id', userId),
+          supabase.from('cost_quotes').select('*').eq('user_id', userId),
+          supabase.from('repair_progress').select('*').eq('user_id', userId),
+          supabase.from('support_messages').select('*').eq('user_id', userId),
+          loadProfile(),
+          loadUsageSummary(supabase),
+        ]);
+      const exportError =
+        diagnoses.error ??
+        maintenance.error ??
+        feedback.error ??
+        quotes.error ??
+        progress.error ??
+        support.error;
+      if (exportError) fail(exportError, 'Your data could not be exported');
       const mappedDiagnoses = await Promise.all(
         ((diagnoses.data ?? []) as DiagnosisRow[]).map((row) => mapDiagnosis(supabase, row)),
       );
@@ -1047,18 +1091,25 @@ export function createSupabaseRepository(options: SupabaseRepositoryOptions): Da
         feedback: ((feedback.data ?? []) as FeedbackRow[]).map(mapFeedback),
         quotes: ((quotes.data ?? []) as QuoteRow[]).map(mapQuote),
         progress: ((progress.data ?? []) as ProgressRow[]).map(mapProgress),
+        profile,
+        usage,
+        support: ((support.data ?? []) as SupportRow[]).map(mapSupport),
       };
     },
 
     async deleteAllData(): Promise<void> {
       const supabase = client();
-      const { data: images } = await supabase
+      const { data: images, error: imagesError } = await supabase
         .from('diagnosis_images')
         .select('storage_path')
         .eq('user_id', userId);
+      if (imagesError) fail(imagesError, 'Some data could not be deleted');
       const paths = (images ?? []).map((image) => image.storage_path as string).filter(Boolean);
       if (paths.length > 0) {
-        await supabase.storage.from('diagnosis-images').remove(paths);
+        const { error: storageError } = await supabase.storage
+          .from('diagnosis-images')
+          .remove(paths);
+        if (storageError) fail(storageError, 'Some data could not be deleted');
       }
       const [diagnoses, maintenance, support] = await Promise.all([
         supabase.from('diagnoses').delete().eq('user_id', userId),

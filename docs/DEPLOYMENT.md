@@ -143,6 +143,8 @@ EXPO_PUBLIC_SUPPORT_EMAIL=support@your-domain.example
 EXPO_PUBLIC_ENVIRONMENT=production
 ```
 
+Live mode is the default once Supabase values are present. `EXPO_PUBLIC_ENABLE_DEMO_MODE=false`
+is explicit here for production; `true` forces demo mode even when Supabase is configured.
 `EXPO_PUBLIC_*` values are embedded at build time. Rebuild after changing them; a JavaScript-only reload will not pick up new values.
 
 Never put the service-role key or AI key in `.env` for the mobile build.

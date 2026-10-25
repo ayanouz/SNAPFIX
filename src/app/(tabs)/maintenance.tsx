@@ -47,12 +47,20 @@ export default function MaintenanceScreen() {
 
   const onComplete = async (task: MaintenanceTask) => {
     try {
-      await cancelMaintenanceReminder(task.notificationId);
       const updated = await complete.mutateAsync(task.id);
-      if (task.reminderEnabled && updated.isActive) {
+      await cancelMaintenanceReminder(task.notificationId);
+      if (updated.reminderEnabled && updated.isActive) {
         const notificationId = await scheduleMaintenanceReminder(updated);
         if (notificationId) {
-          await setNotification.mutateAsync({ taskId: updated.id, notificationId });
+          try {
+            await setNotification.mutateAsync({ taskId: updated.id, notificationId });
+          } catch (error) {
+            await cancelMaintenanceReminder(notificationId);
+            throw error;
+          }
+        } else {
+          await setNotification.mutateAsync({ taskId: updated.id, notificationId: null });
+          Alert.alert(t('maintenance.notification_error'), t('maintenance.notification_body'));
         }
       }
     } catch {
@@ -67,12 +75,12 @@ export default function MaintenanceScreen() {
         text: t('common.delete'),
         style: 'destructive',
         onPress: () => {
-          void (async () => {
-            await cancelMaintenanceReminder(task.notificationId);
-            remove.mutate(task.id, {
-              onError: () => Alert.alert(t('errors.title'), t('errors.unknown')),
-            });
-          })();
+          remove.mutate(task.id, {
+            onSuccess: () => {
+              void cancelMaintenanceReminder(task.notificationId);
+            },
+            onError: () => Alert.alert(t('errors.title'), t('errors.unknown')),
+          });
         },
       },
     ]);

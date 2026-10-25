@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -20,6 +20,7 @@ import { useI18n } from '@/i18n';
 import { useAuth } from '@/providers/AuthProvider';
 import { useDiagnosisHistory, useMaintenance, useProfile, useUsage } from '@/hooks/queries';
 import { formatRelativeDate, isDateWithinDays, truncate } from '@/utils/format';
+import { trackEvent } from '@/services/analytics';
 
 export default function HomeScreen() {
   const { theme } = useTheme();
@@ -30,6 +31,13 @@ export default function HomeScreen() {
   const usage = useUsage();
   const history = useDiagnosisHistory({});
   const maintenance = useMaintenance();
+  const trackedReturn = useRef(false);
+
+  useEffect(() => {
+    if (trackedReturn.current || !session?.user.id) return;
+    trackedReturn.current = true;
+    void trackEvent(session.user.id, 'return_visit');
+  }, [session?.user.id]);
 
   const recent = useMemo(
     () => (history.data?.pages ?? []).flatMap((page) => page.items).slice(0, 3),

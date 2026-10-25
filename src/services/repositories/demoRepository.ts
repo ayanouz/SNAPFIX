@@ -227,20 +227,31 @@ export function createDemoRepository(options: DemoRepositoryOptions): DataReposi
     if (existing) return existing;
 
     const task = (async () => {
-      let record = await withLock(async () => {
+      const record = await withLock(async () => {
         const db = await readDb();
         const current = findDiagnosis(db, diagnosisId);
+
+        // A completed first analysis is idempotent. Reassessment is the only
+        // path that may replace an existing analysis.
         if (current.status === 'completed' && !isReassessment) return current;
+        if (current.status === 'analyzing' || current.status === 'uploading') {
+          throw new AppError('conflict', 'An analysis is already running');
+        }
+        if (isReassessment && current.status !== 'completed') {
+          throw new AppError('invalid_input', 'Only a completed diagnosis can be reassessed');
+        }
         if (current.analysisAttempts >= 1 + PLAN_LIMITS.free.maxReassessments) {
           throw new AppError('rate_limited', 'Reassessment limit reached');
         }
         if (!isReassessment) {
           await ensureUsageAllowed(db, diagnosisId);
         }
+
+        // Attempts are counted only after a successful analysis. A failed
+        // first attempt or reassessment must not consume the user's allowance.
         const updated: DiagnosisRecord = {
           ...current,
           status: 'analyzing',
-          analysisAttempts: current.analysisAttempts + 1,
           failureCode: null,
           failureMessage: null,
           updatedAt: now().toISOString(),
@@ -250,9 +261,7 @@ export function createDemoRepository(options: DemoRepositoryOptions): DataReposi
         return updated;
       });
 
-      if (record.status === 'completed' && !isReassessment) {
-        return;
-      }
+      if (record.status !== 'analyzing') return;
 
       await sleep(analysisDelayMs);
 
@@ -268,7 +277,7 @@ export function createDemoRepository(options: DemoRepositoryOptions): DataReposi
           currency: record.currency,
         });
 
-        record = await withLock(async () => {
+        await withLock(async () => {
           const db = await readDb();
           const current = findDiagnosis(db, diagnosisId);
           const updated: DiagnosisRecord = {
@@ -276,6 +285,7 @@ export function createDemoRepository(options: DemoRepositoryOptions): DataReposi
             status: 'completed',
             analysis,
             safetyLevel: analysis.safety.risk_level,
+            analysisAttempts: current.analysisAttempts + 1,
             completedAt: now().toISOString(),
             updatedAt: now().toISOString(),
             failureCode: null,
@@ -283,19 +293,24 @@ export function createDemoRepository(options: DemoRepositoryOptions): DataReposi
           };
           db.diagnoses = db.diagnoses.map((entry) => (entry.id === diagnosisId ? updated : entry));
           await writeDb(db);
-          return updated;
         });
       } catch (error) {
         await withLock(async () => {
           const db = await readDb();
-          const current = findDiagnosis(db, diagnosisId);
+          const current = db.diagnoses.find((entry) => entry.id === diagnosisId);
+          if (!current) return;
+          // If a reassessment fails, keep the previous completed result and
+          // allowance. The caller receives the error and can retry.
+          const restoredStatus = isReassessment && current.analysis ? 'completed' : 'failed';
           db.diagnoses = db.diagnoses.map((entry) =>
             entry.id === diagnosisId
               ? {
                   ...current,
-                  status: 'failed',
-                  failureCode: 'analysis_failed',
-                  failureMessage: 'The local demo analysis could not be completed.',
+                  status: restoredStatus,
+                  failureCode: isReassessment ? null : 'analysis_failed',
+                  failureMessage: isReassessment
+                    ? null
+                    : 'The local demo analysis could not be completed.',
                   updatedAt: now().toISOString(),
                 }
               : entry,
@@ -744,6 +759,10 @@ export function createDemoRepository(options: DemoRepositoryOptions): DataReposi
 
     async exportUserData(): Promise<ExportBundle> {
       const db = await readDb();
+      const period = currentMonthPeriod(now());
+      const used = db.usageEvents.filter((event) =>
+        isWithinPeriod(event.createdAt, period.start, period.end),
+      ).length;
       return {
         exportedAt: now().toISOString(),
         app: 'SNAPFIX',
@@ -753,6 +772,9 @@ export function createDemoRepository(options: DemoRepositoryOptions): DataReposi
         feedback: clone(db.feedback),
         quotes: clone(db.quotes),
         progress: clone(db.progress),
+        profile: await readProfile(),
+        usage: usageSummary('free', used, now()),
+        support: clone(db.support),
       };
     },
 

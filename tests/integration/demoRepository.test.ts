@@ -160,6 +160,9 @@ describe('demo repository integration flow', () => {
     expect(exported.quotes).toHaveLength(2);
     expect(exported.progress).toHaveLength(1);
     expect(exported.maintenance).toHaveLength(1);
+    expect(exported.profile?.displayName).toBe('Integration User');
+    expect(exported.usage?.used).toBe(1);
+    expect(exported.support).toHaveLength(1);
 
     await repo.deleteAllData();
     expect(deleteImages).toHaveBeenCalledWith('integration-user', 'diag-1');

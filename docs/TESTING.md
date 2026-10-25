@@ -2,17 +2,17 @@
 
 ## 1. Current verification
 
-Verified locally on 2026-10-24:
+Verified locally on 2026-10-25:
 
 | Check                            | Command                                                | Result                                           |
 | -------------------------------- | ------------------------------------------------------ | ------------------------------------------------ |
 | Lint                             | `npm run lint`                                         | Passed                                           |
 | Typecheck                        | `npm run typecheck`                                    | Passed                                           |
 | Expo config/dependencies         | `npx expo-doctor`                                      | **20/20 checks passed**                          |
-| Unit/component/integration tests | `npm run test:ci`                                      | **9 suites, 42 tests passed**                    |
-| Android production bundle        | `npx expo export --platform android --output-dir dist` | Bundled successfully (2,097 modules)             |
-| iOS production bundle            | `npx expo export --platform ios --output-dir dist`     | Bundled successfully (2,101 modules)             |
-| Web production bundle            | `npx expo export --platform web --output-dir dist`     | Bundled successfully (1,772 modules)             |
+| Unit/component/integration tests | `npm run test:ci`                                      | **10 suites, 46 tests passed**                   |
+| Android production bundle        | `npx expo export --platform android --output-dir dist` | Bundled successfully (2,107 modules)             |
+| iOS production bundle            | `npx expo export --platform ios --output-dir dist`     | Bundled successfully (2,111 modules)             |
+| Web production bundle            | `npx expo export --platform web --output-dir dist`     | Bundled successfully (1,782 modules)             |
 | Web dev-server smoke test        | `npm run web` (manual browser flow)                    | **Passed** (see 1.1)                             |
 | Native build                     | —                                                      | **Not run** (no Android SDK; iOS requires macOS) |
 | Hosted Supabase migrations/RLS   | —                                                      | **Not run**                                      |
@@ -24,16 +24,20 @@ These results must not be read as a claim that a store build or live deployment 
 
 ### 1.1 Web dev-server smoke test
 
-On 2026-10-24 the web target was started with `npx expo start --web` and exercised in a browser in demo mode:
+On 2026-10-25 the web target was started with `npx expo start --web` and exercised in a browser in demo mode:
 
 - onboarding → demo sign-in → home
 - photo selection → description → completed diagnosis
 - repair guide → quote comparison
 - history and usage counter update
 - maintenance task creation
-- Arabic language switch
+- Arabic language switch, including localized rule warning bodies and escalation
+- profile display-name save
+- JSON data export downloaded as `snapfix-export-2026-10-25.json`
+- profile → account settings, legal terms, and password screens render
+- free-plan subscription screen with an honest billing-not-connected placeholder
 
-No uncaught console errors remained after the test. This run found and fixed a web-only startup crash: `expo-notifications` does not implement `getLastNotificationResponse()` on web, so notification-response handling is now skipped when `Platform.OS === 'web'`. The browser preview is still not a substitute for native verification, and maintenance reminders are intentionally not scheduled on web.
+No uncaught runtime errors were observed. The only expected console noise is the `expo-notifications` warning that push-token listeners are unsupported on web. This run also confirmed the earlier web-only startup fix: `expo-notifications` does not implement `getLastNotificationResponse()` on web, so notification-response handling is skipped when `Platform.OS === 'web'`. The browser preview is still not a substitute for native verification, and maintenance reminders are intentionally not scheduled on web.
 
 ## 2. Commands
 
@@ -63,11 +67,12 @@ tests/
   unit/
     schema.test.ts          analysis contract, contradictory safety output, JSON extraction
     safety.test.ts          hazard detection, escalation, unsafe instructions, risk ranking
-    cost.test.ts            verified references, expiry, currency/region/cause matching, quotes
+    cost.test.ts            verified references, expiry, currency/region/cause matching, quotes, localized assumptions
     usage.test.ts           plan limits, UTC periods, entitlement expiry
     format.test.ts          dates, currency, confidence, durations, estimate reasons
     errors.test.ts          normalization and translation keys
     i18n.test.ts            EN/FR/AR key parity and interpolation
+    diagnosisDraft.test.ts  per-user draft isolation and reset
   component/
     ui.test.tsx             Badge, Button, SafetyBanner
   integration/
@@ -88,6 +93,7 @@ tests/
   - only recent, matching references produce a range
   - labor is added only when excluded by the reference
   - currency/region/cause mismatches return the correct unavailable reason
+  - localized FR/AR assumptions do not change the numeric range
   - mixed-currency quote comparison never computes savings
 - Free/premium usage limits and UTC month boundaries.
 - Entitlement active/expired behavior.
@@ -103,7 +109,7 @@ tests/
   - quotes + comparison
   - maintenance completion and next due date
   - support message
-  - export
+  - export including profile, usage, and support messages
   - delete all data
   - free monthly quota
   - one-reassessment limit
@@ -114,6 +120,7 @@ tests/
 - Live Supabase integration, RLS, triggers, storage policies, and RPC behavior.
 - Real AI provider requests, rate limits, timeouts, and provider-specific JSON quirks.
 - Billing provider webhooks and receipt verification.
+- The Premium entitlement UI state; demo mode has no entitlement, so only the free-plan screen was exercised manually.
 - Native image picker/camera, compression, notifications, sharing, and secure storage.
 - Push notifications and background behavior.
 - RTL visual layout and screen-reader behavior on a device.
@@ -162,6 +169,7 @@ Run these on a development build before release.
 - [ ] Result displays observations, hypotheses, checks, repairability, and estimate state.
 - [ ] Save/share/reassess/delete work.
 - [ ] A gas/electrical description escalates and hides DIY options.
+- [ ] Rule warning bodies and escalation text are localized in French and Arabic.
 - [ ] A safe description can show a guide.
 - [ ] Repair progress persists after restart.
 - [ ] Quote comparison handles one/many/mixed currencies.

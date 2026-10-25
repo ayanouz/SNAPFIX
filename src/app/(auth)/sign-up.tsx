@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
-import { AppText, Button, Card, DemoBanner, Screen, TextField } from '@/components/ui';
+import { AppText, Button, Card, DemoBanner, LegalLinks, Screen, TextField } from '@/components/ui';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useI18n } from '@/i18n';
 import { useAuth } from '@/providers/AuthProvider';
@@ -176,6 +176,7 @@ export default function SignUpScreen() {
         <AppText variant="caption" color={theme.colors.textMuted} align="center">
           {t('auth.terms')}
         </AppText>
+        <LegalLinks />
       </Screen>
     </KeyboardAvoidingView>
   );

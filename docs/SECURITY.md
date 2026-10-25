@@ -35,7 +35,7 @@ Only `EXPO_PUBLIC_*` values are bundled into the app:
 
 - `EXPO_PUBLIC_SUPABASE_URL`
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
-- `EXPO_PUBLIC_ENABLE_DEMO_MODE`
+- `EXPO_PUBLIC_ENABLE_DEMO_MODE` (explicit demo opt-in; live is the default when Supabase is configured)
 - `EXPO_PUBLIC_SUPPORT_EMAIL`
 - `EXPO_PUBLIC_ENVIRONMENT`
 
@@ -138,6 +138,7 @@ Open risks to verify on the hosted project:
 - JWT required.
 - Requires `confirm: true`.
 - Removes storage objects, then deletes the Auth user.
+- Aborts if storage listing or removal fails, so account deletion does not orphan photos.
 - Cascades database rows.
 - Logs only generic failure messages.
 

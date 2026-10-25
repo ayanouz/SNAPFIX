@@ -58,7 +58,31 @@ describe('UI primitives', () => {
     expect(screen.getByText(translate('en', 'safety.risk_critical'))).toBeTruthy();
     expect(screen.getByText(translate('en', 'safety.stop_guidance'))).toBeTruthy();
     expect(screen.getByText(translate('en', 'safety.warnings.gas_leak'))).toBeTruthy();
-    expect(screen.getByText('Possible gas leak. Leave the area.')).toBeTruthy();
-    expect(screen.getByText('Call the gas emergency service.')).toBeTruthy();
+    expect(screen.getByText(translate('en', 'safety.warning_bodies.gas_leak'))).toBeTruthy();
+    expect(screen.getByText(translate('en', 'safety.escalations.gas_leak'))).toBeTruthy();
+  });
+
+  it('keeps model-sourced warning text instead of replacing it with rule copy', async () => {
+    await render(
+      <SafetyBanner
+        safety={{
+          risk_level: 'low',
+          professional_required: false,
+          stop_guidance: false,
+          warnings: [
+            {
+              code: 'uncertain_evidence',
+              severity: 'low',
+              message: 'Model-specific limitation.',
+              source: 'model',
+            },
+          ],
+          escalation: null,
+        }}
+      />,
+      { wrapper: Wrapper },
+    );
+
+    expect(screen.getByText('Model-specific limitation.')).toBeTruthy();
   });
 });

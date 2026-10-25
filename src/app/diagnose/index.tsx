@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Image,
@@ -19,6 +19,7 @@ import {
   Button,
   Card,
   Chip,
+  LoadingView,
   Screen,
   ScreenHeader,
   TextField,
@@ -26,17 +27,19 @@ import {
 import { useTheme } from '@/providers/ThemeProvider';
 import { useI18n } from '@/i18n';
 import { useAuth } from '@/providers/AuthProvider';
-import { useCreateDiagnosis, useUsage } from '@/hooks/queries';
+import { useCreateDiagnosis, useDiagnosisHistory, useUsage } from '@/hooks/queries';
 import { diagnosisDetailsFormSchema, type DiagnosisDetailsForm } from '@/domain/validation';
 import { CATEGORIES, type Category } from '@/domain/diagnosis/schema';
 import { PLAN_LIMITS } from '@/domain/usage';
 import { useDiagnosisDraft } from '@/stores/diagnosisDraft';
+import { useDiagnosisDraftHydrated } from '@/hooks/useHydrated';
 import { usePreferencesStore } from '@/stores/preferences';
 import {
   deleteFileQuietly,
   persistDraftImage,
   prepareImage,
 } from '@/services/storage/imageService';
+import { trackEvent } from '@/services/analytics';
 import { createId } from '@/utils/ids';
 import { normalizeError } from '@/domain/errors';
 import { appConfig } from '@/constants/config';
@@ -47,9 +50,14 @@ export default function DiagnoseScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const usage = useUsage();
+  const history = useDiagnosisHistory({});
   const createDiagnosis = useCreateDiagnosis();
   const currency = usePreferencesStore((state) => state.currency);
   const draft = useDiagnosisDraft();
+  const draftHydrated = useDiagnosisDraftHydrated();
+  const ownerId = session?.user.id ?? null;
+  const formReady = draftHydrated && Boolean(ownerId) && draft.ownerId === ownerId;
+  const boundOwner = useRef<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
 
@@ -63,6 +71,7 @@ export default function DiagnoseScreen() {
     control,
     handleSubmit,
     setError,
+    reset: resetForm,
     formState: { errors },
   } = useForm<DiagnosisDetailsForm>({
     defaultValues: {
@@ -73,6 +82,25 @@ export default function DiagnoseScreen() {
       ageYears: draft.ageYears,
     },
   });
+
+  useEffect(() => {
+    if (draftHydrated && ownerId) {
+      useDiagnosisDraft.getState().setOwner(ownerId);
+    }
+  }, [draftHydrated, ownerId]);
+
+  useEffect(() => {
+    if (!formReady || !ownerId || boundOwner.current === ownerId) return;
+    boundOwner.current = ownerId;
+    const restored = useDiagnosisDraft.getState();
+    resetForm({
+      description: restored.description,
+      brand: restored.brand,
+      model: restored.model,
+      errorCode: restored.errorCode,
+      ageYears: restored.ageYears,
+    });
+  }, [formReady, ownerId, resetForm]);
 
   const addPrepared = async (asset: ImagePicker.ImagePickerAsset) => {
     const prepared = await prepareImage({
@@ -189,6 +217,11 @@ export default function DiagnoseScreen() {
         locale: language,
         imageUris: draft.photos.map((photo) => photo.uri),
       });
+      if (history.data && (history.data.pages[0]?.total ?? 0) === 0) {
+        void trackEvent(session?.user.id ?? null, 'first_diagnosis_started', {
+          category: draft.category,
+        });
+      }
       for (const photo of draft.photos) deleteFileQuietly(photo.uri);
       draft.reset();
       router.replace({ pathname: '/diagnosis/[id]', params: { id: record.id } });
@@ -198,6 +231,15 @@ export default function DiagnoseScreen() {
       setSubmitting(false);
     }
   });
+
+  if (!formReady) {
+    return (
+      <Screen>
+        <ScreenHeader title={t('diagnose.title')} subtitle={t('diagnose.subtitle')} back />
+        <LoadingView message={t('common.loading')} />
+      </Screen>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -344,7 +386,10 @@ export default function DiagnoseScreen() {
               <TextField
                 label={t('diagnose.brand')}
                 value={value ?? ''}
-                onChangeText={onChange}
+                onChangeText={(next) => {
+                  onChange(next);
+                  draft.setBrand(next);
+                }}
                 onBlur={onBlur}
                 maxLength={80}
                 error={errors.brand?.message}
@@ -358,7 +403,10 @@ export default function DiagnoseScreen() {
               <TextField
                 label={t('diagnose.model')}
                 value={value ?? ''}
-                onChangeText={onChange}
+                onChangeText={(next) => {
+                  onChange(next);
+                  draft.setModel(next);
+                }}
                 onBlur={onBlur}
                 maxLength={80}
                 error={errors.model?.message}
@@ -372,7 +420,10 @@ export default function DiagnoseScreen() {
               <TextField
                 label={t('diagnose.error_code')}
                 value={value ?? ''}
-                onChangeText={onChange}
+                onChangeText={(next) => {
+                  onChange(next);
+                  draft.setErrorCode(next);
+                }}
                 onBlur={onBlur}
                 maxLength={40}
                 autoCapitalize="characters"
@@ -387,7 +438,10 @@ export default function DiagnoseScreen() {
               <TextField
                 label={t('diagnose.age')}
                 value={value ?? ''}
-                onChangeText={onChange}
+                onChangeText={(next) => {
+                  onChange(next);
+                  draft.setAgeYears(next);
+                }}
                 onBlur={onBlur}
                 placeholder={t('diagnose.age_placeholder')}
                 keyboardType="number-pad"

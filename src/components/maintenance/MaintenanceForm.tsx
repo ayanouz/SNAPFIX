@@ -44,6 +44,11 @@ export function MaintenanceForm({ task }: { task?: MaintenanceTask }) {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/(tabs)/maintenance');
+  };
+
   const {
     control,
     handleSubmit,
@@ -82,15 +87,24 @@ export function MaintenanceForm({ task }: { task?: MaintenanceTask }) {
     setFormError(null);
     setSaving(true);
     try {
-      if (task) {
-        await cancelMaintenanceReminder(task.notificationId);
+      let reminderEnabled = parsed.data.reminderEnabled;
+      if (reminderEnabled && Platform.OS === 'web') {
+        reminderEnabled = false;
+        Alert.alert(t('maintenance.reminder_web_title'), t('maintenance.reminder_web_body'));
+      } else if (reminderEnabled) {
+        const granted = await ensureNotificationPermission();
+        if (!granted) {
+          reminderEnabled = false;
+          Alert.alert(t('maintenance.notification_permission'), t('maintenance.notification_body'));
+        }
       }
+
       const input = {
         itemDescription: parsed.data.itemDescription,
         taskDescription: parsed.data.taskDescription,
         frequency: parsed.data.frequency,
         nextDueDate: parsed.data.nextDueDate,
-        reminderEnabled: parsed.data.reminderEnabled,
+        reminderEnabled,
         lastCompletedAt: task?.lastCompletedAt ?? null,
         notes: parsed.data.notes,
         isActive: task?.isActive ?? true,
@@ -99,19 +113,32 @@ export function MaintenanceForm({ task }: { task?: MaintenanceTask }) {
         ? await update.mutateAsync({ taskId: task.id, input })
         : await create.mutateAsync(input);
 
+      // Cancel the previous reminder only after the task update succeeds, so a
+      // failed save cannot silently remove a working reminder.
+      if (task) await cancelMaintenanceReminder(task.notificationId);
+
       if (saved.reminderEnabled && saved.isActive) {
-        const granted = await ensureNotificationPermission();
-        if (granted) {
-          const notificationId = await scheduleMaintenanceReminder(saved);
-          if (notificationId) {
+        const notificationId = await scheduleMaintenanceReminder(saved);
+        if (notificationId) {
+          try {
             await setNotification.mutateAsync({ taskId: saved.id, notificationId });
+          } catch (error) {
+            await cancelMaintenanceReminder(notificationId);
+            throw error;
           }
         } else {
-          Alert.alert(t('maintenance.notification_permission'), t('maintenance.notification_body'));
+          await update.mutateAsync({
+            taskId: saved.id,
+            input: { ...input, reminderEnabled: false },
+          });
+          await setNotification.mutateAsync({ taskId: saved.id, notificationId: null });
+          Alert.alert(t('maintenance.notification_error'), t('maintenance.notification_body'));
         }
+      } else if (saved.notificationId) {
+        await setNotification.mutateAsync({ taskId: saved.id, notificationId: null });
       }
 
-      router.back();
+      goBack();
     } catch {
       setFormError(t('errors.unknown'));
     } finally {
@@ -129,9 +156,9 @@ export function MaintenanceForm({ task }: { task?: MaintenanceTask }) {
         onPress: () => {
           void (async () => {
             try {
-              await cancelMaintenanceReminder(task.notificationId);
               await remove.mutateAsync(task.id);
-              router.back();
+              await cancelMaintenanceReminder(task.notificationId);
+              goBack();
             } catch {
               Alert.alert(t('errors.title'), t('errors.unknown'));
             }
@@ -236,12 +263,18 @@ export function MaintenanceForm({ task }: { task?: MaintenanceTask }) {
                 <Switch
                   value={value}
                   onValueChange={onChange}
+                  disabled={Platform.OS === 'web'}
                   trackColor={{ true: theme.colors.brand, false: theme.colors.border }}
                   thumbColor="#FFFFFF"
                 />
               )}
             />
           </View>
+          {Platform.OS === 'web' ? (
+            <AppText variant="caption" color={theme.colors.textMuted}>
+              {t('maintenance.reminder_web_unavailable')}
+            </AppText>
+          ) : null}
           <Controller
             control={control}
             name="notes"

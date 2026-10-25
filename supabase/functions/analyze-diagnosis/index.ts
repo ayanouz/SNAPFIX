@@ -125,17 +125,29 @@ async function markFailed(
   admin: SupabaseClient,
   diagnosisId: string,
   error: unknown,
+  reassess: boolean,
 ): Promise<void> {
   const code = error instanceof ApiError ? error.code : 'ai_failed';
   const message =
     error instanceof ApiError ? error.message.slice(0, 500) : 'The analysis could not be completed';
+  // A failed reassessment must not destroy the previous completed analysis or
+  // consume the user's reassessment allowance. A failed first analysis becomes
+  // retryable and keeps analysis_attempts unchanged.
   await admin
     .from('diagnoses')
-    .update({
-      status: 'failed',
-      failure_code: code,
-      failure_message: message,
-    })
+    .update(
+      reassess
+        ? {
+            status: 'completed',
+            failure_code: null,
+            failure_message: null,
+          }
+        : {
+            status: 'failed',
+            failure_code: code,
+            failure_message: message,
+          },
+    )
     .eq('id', diagnosisId)
     .eq('status', 'analyzing');
 }
@@ -147,6 +159,7 @@ Deno.serve(async (req: Request) => {
 
   let admin: SupabaseClient | null = null;
   let diagnosisId = '';
+  let reassess = false;
 
   try {
     requireMethod(req, 'POST');
@@ -171,7 +184,7 @@ Deno.serve(async (req: Request) => {
 
     const body = await readJson<{ diagnosisId?: unknown; reassess?: unknown }>(req);
     diagnosisId = asUuid(body.diagnosisId, 'diagnosisId');
-    const reassess = body.reassess === true;
+    reassess = body.reassess === true;
 
     admin = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -210,6 +223,7 @@ Deno.serve(async (req: Request) => {
 
     const plan = await resolvePlan(admin, userId);
     const maxAttempts = plan === 'premium' ? PREMIUM_ATTEMPTS : FREE_ATTEMPTS;
+    const maxImages = plan === 'premium' ? MAX_IMAGES : 2;
     if (diagnosis.analysis_attempts >= maxAttempts) {
       throw new ApiError(
         'rate_limited',
@@ -245,12 +259,12 @@ Deno.serve(async (req: Request) => {
       .from('diagnoses')
       .update({
         status: 'analyzing',
-        analysis_attempts: expectedAttempts + 1,
         failure_code: null,
         failure_message: null,
       })
       .eq('id', diagnosisId)
       .eq('user_id', userId)
+      .eq('status', diagnosis.status)
       .eq('analysis_attempts', expectedAttempts)
       .select('id')
       .maybeSingle();
@@ -264,7 +278,7 @@ Deno.serve(async (req: Request) => {
       .select('storage_path,mime_type,position')
       .eq('diagnosis_id', diagnosisId)
       .order('position', { ascending: true })
-      .limit(MAX_IMAGES);
+      .limit(maxImages);
 
     if (imagesError) {
       throw new ApiError('storage_failed', 'The diagnosis photos could not be loaded', 502);
@@ -333,12 +347,14 @@ Deno.serve(async (req: Request) => {
         provider_model: analysis.provider.model,
         provider_mode: analysis.provider.mode,
         schema_version: analysis.provider.schema_version,
+        analysis_attempts: expectedAttempts + 1,
         completed_at: completedAt,
         failure_code: null,
         failure_message: null,
       })
       .eq('id', diagnosisId)
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .eq('status', 'analyzing');
 
     if (completeError) {
       throw new ApiError('ai_failed', 'The analysis could not be saved', 502);
@@ -386,7 +402,7 @@ Deno.serve(async (req: Request) => {
     });
   } catch (error) {
     if (admin && diagnosisId) {
-      await markFailed(admin, diagnosisId, error);
+      await markFailed(admin, diagnosisId, error, reassess);
     }
     return errorResponse(req, error);
   }

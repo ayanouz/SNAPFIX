@@ -100,8 +100,16 @@ interface DataRepository {
   feedback: DiagnosisFeedback[];
   quotes: CostQuote[];
   progress: RepairProgress[];
+  profile?: UserProfile;
+  usage?: UsageSummary;
+  support?: SupportMessage[];
+  preferences?: { language: string; currency: string; theme: string };
 }
 ```
+
+The export is produced by the repository and augmented with device-local display
+preferences by `src/services/export.ts`. Support messages are included when the
+repository has them.
 
 ## 2. Analysis contract
 
@@ -182,11 +190,13 @@ Behavior:
 - Returns the existing analysis idempotently if already completed and `reassess=false`.
 - Rejects concurrent analysis with `409 conflict`.
 - Enforces plan attempt limits (free 1 reassessment; premium 3).
-- Claims monthly usage atomically through `claim_diagnosis_usage`.
+- Claims monthly usage atomically through `claim_diagnosis_usage`. Retrying the same diagnosis does not claim a second monthly usage event.
 - Downloads images from private storage, checks MIME/size, and sends them to the configured provider.
 - Parses provider JSON, builds the analysis, applies the deterministic safety policy, and computes the estimate from verified references.
 - Persists the analysis and upserts a repair guide.
-- Marks the diagnosis `failed` with a safe failure code on error.
+- Increments `analysis_attempts` only after a successful analysis.
+- On a failed first analysis, marks the diagnosis `failed` with a safe failure code and leaves it retryable.
+- On a failed reassessment, restores the previous `completed` state, keeps the previous analysis, and leaves the attempt allowance unchanged.
 
 Errors:
 
@@ -302,6 +312,6 @@ unsupported_image, rate_limited, conflict, cancelled, unknown
 ## 7. Versioning
 
 - Analysis contract: `provider.schema_version` (`1.0.0`).
-- Export bundle: `schemaVersion: 1`.
+- Export bundle: `schemaVersion: 1`, with optional profile, usage, support, and preference fields.
 - Migrations are immutable; add new migration files for changes.
 - Edge Functions and the mobile client must be deployed in a compatible order when the analysis contract changes. Prefer additive fields and a new schema version.

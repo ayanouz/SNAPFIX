@@ -8,25 +8,25 @@ The app is intentionally conservative. It does **not** invent diagnoses or price
 
 ---
 
-## Project status (verified on 2026-10-24)
+## Project status (verified on 2026-10-25)
 
 This repository is a **production-oriented implementation**, not a claim that a live deployment has already been completed.
 
-| Area                                                                                                           | Status                                                                                        |
-| -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Demo mode (no backend required)                                                                                | Implemented and exercised by tests                                                            |
-| UI flows: onboarding, auth, diagnose, result, guide, quote comparison, history, maintenance, profile, settings | Implemented                                                                                   |
-| Deterministic safety policy and cost estimator                                                                 | Implemented, unit-tested                                                                      |
-| English / French / Arabic dictionaries with RTL support                                                        | Implemented, parity-tested                                                                    |
-| Supabase schema, RLS, storage policies, Edge Functions                                                         | Code complete, **not executed against a live Supabase project**                               |
-| Live AI provider calls (OpenAI / Anthropic / Gemini)                                                           | Code complete, **not verified with real API keys**                                            |
-| Billing / store purchases                                                                                      | **Not connected**. The UI states this honestly; a provider-neutral entitlement webhook exists |
-| Native Android / iOS build                                                                                     | **Not verified** (no Android SDK locally; iOS builds require macOS)                           |
-| Store submission                                                                                               | **Not performed**                                                                             |
-| E2E automation                                                                                                 | Maestro flow supplied, **not run**                                                            |
-| Lint / typecheck / Jest / Expo Doctor / Android + iOS bundle export                                            | **Passed locally** (see [Testing](docs/TESTING.md))                                           |
+| Area                                                                                                                  | Status                                                                                        |
+| --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Demo mode (no backend required)                                                                                       | Implemented and exercised by tests                                                            |
+| UI flows: onboarding, auth, diagnose, result, guide, quote comparison, history, maintenance, profile, settings, legal | Implemented                                                                                   |
+| Deterministic safety policy and cost estimator                                                                        | Implemented, unit-tested                                                                      |
+| English / French / Arabic dictionaries with RTL support                                                               | Implemented, parity-tested                                                                    |
+| Supabase schema, RLS, storage policies, Edge Functions                                                                | Code complete, **not executed against a live Supabase project**                               |
+| Live AI provider calls (OpenAI / Anthropic / Gemini)                                                                  | Code complete, **not verified with real API keys**                                            |
+| Billing / store purchases                                                                                             | **Not connected**. The UI states this honestly; a provider-neutral entitlement webhook exists |
+| Native Android / iOS build                                                                                            | **Not verified** (no Android SDK locally; iOS builds require macOS)                           |
+| Store submission                                                                                                      | **Not performed**                                                                             |
+| E2E automation                                                                                                        | Maestro flow supplied, **not run**                                                            |
+| Lint / typecheck / Jest / Expo Doctor / Android + iOS + web bundle export                                             | **Passed locally** (see [Testing](docs/TESTING.md))                                           |
 
-The default configuration runs in **explicit demo mode**. No Supabase project or AI key is needed to explore the app. Demo mode never analyzes image pixels; it converts the user's description into clearly labelled hypotheses and states that limitation in the UI.
+The default configuration runs in **explicit demo mode** when no Supabase values are present. No Supabase project or AI key is needed to explore the app. When Supabase values are configured, live mode is the default; set `EXPO_PUBLIC_ENABLE_DEMO_MODE=true` only to force the local demo. Demo mode never analyzes image pixels; it converts the user's description into clearly labelled hypotheses and states that limitation in the UI.
 
 ---
 
@@ -39,11 +39,14 @@ The default configuration runs in **explicit demo mode**. No Supabase project or
 - **Quote comparison** with deterministic arithmetic; mixed currencies are never compared.
 - **Maintenance reminders** with local notifications and completion scheduling.
 - **History** with search, saved/category filters, pagination, and per-user isolation.
-- **Accounts** with email/password auth in live mode and a local demo account in demo mode.
-- **Data controls**: JSON export, delete all data, and full account deletion (live mode).
+- **Accounts** with email/password auth in live mode, a local demo account in demo mode, profile editing, and password changes.
+- **Data controls**: JSON export (including profile, usage, support messages, and preferences), delete all data, and full account deletion in both demo and live modes.
+- **Draft isolation**: the diagnosis draft and its photos are scoped to the signed-in user and cleared on sign-out or account deletion.
 - **Localization**: English, French, and Arabic, including RTL layout and locale-aware dates/currency.
 - **Plans**: free (5 diagnoses/month) and premium (30/month) entitlement plumbing.
-- **Demo / live mode banner** so the current data source is never ambiguous.
+- **Demo / live mode banner** and an offline banner so the current data source and connectivity are never ambiguous.
+- **In-app legal and privacy summary** linked from auth and profile, with an explicit statement that SNAPFIX is not an emergency service.
+- **Resilient analysis lifecycle**: failed attempts can be retried or deleted, and a failed reassessment preserves the previous completed result.
 
 ---
 
@@ -191,6 +194,7 @@ See [AI_SAFETY.md](docs/AI_SAFETY.md) for the full policy.
 - Live Supabase migrations, RLS behavior, storage policies, and Edge Functions have not been executed against a hosted project in this environment.
 - No real AI provider request has been made; provider response parsing is covered only by local contract tests.
 - Billing is not connected to App Store / Play Store purchases. Premium entitlements must be granted by a verified billing adapter through the webhook.
+- The in-app legal summary is not a substitute for a hosted, counsel-reviewed privacy policy and terms URL required by the stores.
 - No native build or store submission has been produced.
 - Demo mode is deterministic and description-based; it does not inspect image pixels.
 - Maestro E2E is provided but has not been run.

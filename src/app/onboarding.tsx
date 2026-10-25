@@ -7,6 +7,7 @@ import { useI18n } from '@/i18n';
 import { usePreferencesStore, LANGUAGES, type Language } from '@/stores/preferences';
 import { useAuth } from '@/providers/AuthProvider';
 import { appConfig } from '@/constants/config';
+import { trackEvent } from '@/services/analytics';
 
 const FEATURES = [
   { icon: 'camera-outline', title: 'onboarding.feature1_title', body: 'onboarding.feature1_body' },
@@ -30,8 +31,13 @@ export default function OnboardingScreen() {
   const setLanguage = usePreferencesStore((state) => state.setLanguage);
   const completeOnboarding = usePreferencesStore((state) => state.completeOnboarding);
 
-  const start = () => {
+  const finishOnboarding = () => {
     completeOnboarding();
+    void trackEvent(session?.user.id ?? null, 'onboarding_completed');
+  };
+
+  const start = () => {
+    finishOnboarding();
     router.replace(session ? '/(tabs)' : '/(auth)/sign-in');
   };
 
@@ -105,7 +111,7 @@ export default function OnboardingScreen() {
           label={t('onboarding.have_account')}
           variant="ghost"
           onPress={() => {
-            completeOnboarding();
+            finishOnboarding();
             router.replace('/(auth)/sign-in');
           }}
         />

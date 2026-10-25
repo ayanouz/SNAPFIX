@@ -45,6 +45,7 @@ export const fr: Record<TranslationKey, string> = {
   'errors.ai_not_configured':
     "Le service d'analyse n'est pas encore configuré. Contactez le support.",
   'errors.ai_failed': "Le service d'analyse n'a pas pu terminer la demande. Réessayez.",
+  'errors.analysis_failed': "L'analyse n'a pas abouti. Réessayez.",
   'errors.invalid_input': 'Vérifiez les informations saisies.',
   'errors.not_found': "Cet élément n'existe plus.",
   'errors.storage_failed': "La photo n'a pas pu être enregistrée. Réessayez.",
@@ -111,6 +112,7 @@ export const fr: Record<TranslationKey, string> = {
     'Cela supprime vos diagnostics, photos, tâches d’entretien, avis et compte. Cette action est irréversible.',
   'auth.recovery_invalid': 'Ce lien de récupération est invalide ou a expiré.',
   'auth.password_hint': 'Au moins 8 caractères, avec une lettre et un chiffre.',
+  'auth.password_mismatch': 'Les mots de passe ne correspondent pas.',
 
   'tabs.home': 'Accueil',
   'tabs.history': 'Historique',
@@ -192,6 +194,10 @@ export const fr: Record<TranslationKey, string> = {
   'diagnosis.analyzing_step1': 'Vérification des photos et de la description',
   'diagnosis.analyzing_step2': 'Séparation des observations et des causes possibles',
   'diagnosis.analyzing_step3': 'Application des règles de sécurité indépendantes',
+  'diagnosis.analyzing_slow':
+    'Cela prend plus de temps que d’habitude. Vous pouvez garder cet écran ouvert ou revenir plus tard.',
+  'diagnosis.analyzing_leave':
+    'Vous pouvez quitter cet écran. L’évaluation continue en arrière-plan.',
   'diagnosis.failed_title': 'L’évaluation n’a pas abouti',
   'diagnosis.failed_body':
     'Vos photos et votre description sont enregistrées. Vous pouvez relancer l’analyse.',
@@ -305,6 +311,52 @@ export const fr: Record<TranslationKey, string> = {
   'safety.warnings.uncertain_evidence': 'Preuves limitées',
   'safety.warnings.photo_limitation': 'Limite des photos',
   'safety.warnings.demo_mode': 'Mode démo',
+  'safety.warning_bodies.gas_leak':
+    'Une odeur ou une fuite de gaz est une urgence potentielle. N’actionnez pas d’interrupteurs, n’allumez pas de flamme et ne tentez pas de réparation.',
+  'safety.warning_bodies.carbon_monoxide':
+    'Du monoxyde de carbone peut être présent. Il s’agit d’une urgence vitale, pas d’une tâche de réparation.',
+  'safety.warning_bodies.fire_smoke':
+    'Un incendie, des flammes ou de la fumée ont été mentionnés. Arrêtez la réparation et privilégiez l’évacuation et les secours.',
+  'safety.warning_bodies.electrical_hazard':
+    'Risque électrique possible. Ne touchez pas aux conducteurs dénudés et ne travaillez pas sur un équipement sous tension.',
+  'safety.warning_bodies.structural_hazard':
+    'Des dommages structurels peuvent être présents. Une photo seule ne permet pas de les évaluer en sécurité.',
+  'safety.warning_bodies.chemical_hazard':
+    'Exposition chimique possible. Évitez d’inhaler des vapeurs ou de mélanger des produits, et ne poursuivez pas les réparations.',
+  'safety.warning_bodies.pressure_system':
+    'Les systèmes sous pression ou d’eau chaude peuvent libérer de l’eau brûlante ou de la vapeur.',
+  'safety.warning_bodies.vehicle_safety':
+    'Les défauts de freinage, de direction ou d’airbag sont des systèmes de sécurité critiques du véhicule.',
+  'safety.warning_bodies.high_voltage':
+    'Cet équipement peut stocker une haute tension dangereuse même après avoir été débranché.',
+  'safety.warning_bodies.unsafe_instruction_removed':
+    'Certaines instructions dangereuses ont été supprimées de la réponse de l’IA. Ne tentez pas de procédures contournant les dispositifs de sécurité.',
+  'safety.warning_bodies.professional_required':
+    'Cette situation doit être vérifiée par un professionnel qualifié. SNAPFIX ne fournira pas d’étapes de réparation à faire soi-même.',
+  'safety.warning_bodies.uncertain_evidence':
+    'Les éléments disponibles sont limités ; les causes possibles ci-dessous sont des hypothèses, pas un diagnostic confirmé.',
+  'safety.warning_bodies.photo_limitation':
+    'Une photo ne peut pas confirmer un défaut caché, un code d’erreur ou la pièce exacte en panne.',
+  'safety.warning_bodies.demo_mode':
+    'Mode démo : ces conseils sont générés à partir de votre description et de règles de sécurité déterministes. Aucun modèle d’analyse d’image ne fonctionne.',
+  'safety.escalations.gas_leak':
+    'Quittez la zone, évitez les flammes et les interrupteurs électriques, aérez uniquement si c’est sûr et contactez votre fournisseur de gaz ou les secours depuis un endroit sûr.',
+  'safety.escalations.carbon_monoxide':
+    'Mettez tout le monde à l’air libre, appelez les secours et ne rentrez pas avant que des professionnels confirment que c’est sûr.',
+  'safety.escalations.fire_smoke':
+    'Évacuez, appelez les secours et n’utilisez pas d’eau sur un feu électrique. N’utilisez un extincteur adapté que si c’est sûr.',
+  'safety.escalations.electrical_hazard':
+    'Coupez l’alimentation au disjoncteur principal uniquement si vous pouvez le faire sans toucher de câblage endommagé. Tenez les autres à l’écart et contactez un électricien qualifié.',
+  'safety.escalations.high_voltage':
+    'N’ouvrez pas le boîtier. Les composants haute tension nécessitent un technicien qualifié.',
+  'safety.escalations.structural_hazard':
+    'Tenez les personnes à l’écart de la zone concernée et contactez un ingénieur structure qualifié ou le gestionnaire de l’immeuble.',
+  'safety.escalations.chemical_hazard':
+    'Aérez uniquement si c’est sûr, quittez la zone et contactez le centre antipoison ou les secours si quelqu’un est exposé.',
+  'safety.escalations.pressure_system':
+    'N’ouvrez pas le système. Isolez-le uniquement via une commande externe sûre et contactez un plombier ou un technicien de chauffage qualifié.',
+  'safety.escalations.vehicle_safety':
+    'Ne conduisez pas le véhicule. Organisez une inspection professionnelle ou un remorquage.',
 
   'estimate.title': 'Estimation du coût',
   'estimate.available': 'Fourchette de référence',
@@ -335,6 +387,8 @@ export const fr: Record<TranslationKey, string> = {
     'Si le problème revient ou si quelque chose semble dangereux, arrêtez et contactez un professionnel.',
   'repair.save_progress': 'Enregistrer la progression',
   'repair.progress_saved': 'Progression enregistrée.',
+  'repair.progress_save_failed':
+    'Votre progression n’a pas pu être enregistrée. Vérifiez votre connexion et réessayez.',
   'repair.tools': 'Outils',
   'repair.materials': 'Matériaux',
   'repair.warning': 'Avertissement',
@@ -404,6 +458,11 @@ export const fr: Record<TranslationKey, string> = {
     'Activez les notifications dans les réglages du système pour recevoir des rappels.',
   'maintenance.notification_scheduled': 'Rappel programmé.',
   'maintenance.notification_error': 'Le rappel n’a pas pu être programmé.',
+  'maintenance.reminder_web_title': 'Les rappels nécessitent l’application mobile',
+  'maintenance.reminder_web_body':
+    'Les notifications programmées ne sont pas disponibles dans l’aperçu web. Votre tâche sera enregistrée sans rappel.',
+  'maintenance.reminder_web_unavailable':
+    'Les rappels programmés sont disponibles dans l’application iOS et Android.',
   'maintenance.form_title': 'Nouvelle tâche d’entretien',
   'maintenance.edit_title': 'Modifier la tâche d’entretien',
   'maintenance.item': 'Élément',
@@ -432,6 +491,12 @@ export const fr: Record<TranslationKey, string> = {
 
   'profile.title': 'Profil',
   'profile.account': 'Compte',
+  'profile.account_settings': 'Paramètres du compte',
+  'profile.edit_profile': 'Modifier le profil',
+  'profile.display_name': 'Nom affiché',
+  'profile.email': 'E-mail',
+  'profile.saved': 'Profil enregistré.',
+  'profile.change_password': 'Changer le mot de passe',
   'profile.plan': 'Offre',
   'profile.plan_free': 'Gratuite',
   'profile.plan_premium': 'Premium',
@@ -462,6 +527,24 @@ export const fr: Record<TranslationKey, string> = {
   'profile.legal': 'Mentions légales',
   'profile.terms': 'Conditions d’utilisation',
   'profile.privacy_policy': 'Politique de confidentialité',
+  'legal.title': 'Conditions et confidentialité',
+  'legal.intro':
+    'SNAPFIX vous aide à organiser vos observations et à savoir quand arrêter et contacter un professionnel qualifié. Il ne remplace pas une inspection, un test ou une réparation professionnels.',
+  'legal.terms_title': 'Conditions d’utilisation',
+  'legal.terms_body':
+    'Utilisez SNAPFIX uniquement comme aide au triage. Ne vous y fiez pas en cas d’urgence et n’ignorez jamais les consignes de sécurité. SNAPFIX ne garantit ni un diagnostic, ni un résultat de réparation, ni un prix. Vous êtes responsable des informations transmises et du respect de la loi applicable. Les abonnements, s’ils sont proposés, sont facturés par le magasin d’applications et gérables depuis votre compte de magasin. Nous pouvons mettre à jour ces conditions ; continuer à utiliser l’application vaut acceptation.',
+  'legal.privacy_title': 'Résumé de confidentialité',
+  'legal.privacy_body':
+    'Le mode démo stocke les données sur cet appareil et n’appelle aucun service d’IA. Le mode réel stocke les données du compte dans Supabase et envoie la description et les photos sélectionnées au fournisseur d’IA configuré pour l’analyse. Nous ne vendons pas de données personnelles. Vous pouvez exporter ou supprimer vos données depuis l’application. Consultez l’écran Confidentialité pour l’explication complète.',
+  'legal.last_updated': 'Dernière mise à jour : octobre 2026',
+  'legal.contact': 'Questions sur ces conditions ou vos données : {email}',
+  'legal.terms_short': 'Conditions d’utilisation',
+  'legal.privacy_short': 'Confidentialité',
+  'network.offline_title': 'Vous êtes hors ligne',
+  'network.offline_body':
+    'Le mode démo fonctionne toujours. L’analyse en direct, la synchronisation et les exports cloud nécessitent une connexion.',
+  'network.online_title': 'De nouveau en ligne',
+  'network.dismiss': 'Fermer',
   'profile.delete_account_note':
     'La suppression du compte retire le compte et ses données cloud. Les données de démonstration locales sont retirées de cet appareil.',
 

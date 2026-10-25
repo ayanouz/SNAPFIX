@@ -66,7 +66,7 @@ Created automatically by the `handle_new_user` trigger after signup.
 | `provider_name`, `provider_model`, `provider_mode` | text         | provenance                                                                                    |
 | `schema_version`                                   | text         | analysis contract version                                                                     |
 | `failure_code`, `failure_message`                  | text         | user-safe failure state                                                                       |
-| `analysis_attempts`                                | integer      | 0–10; plan limit is enforced in the function                                                  |
+| `analysis_attempts`                                | integer      | 0–10; incremented only after a successful analysis; plan limit enforced in the function       |
 | `is_saved`                                         | boolean      | the only client-editable field after insert                                                   |
 | `created_at`, `updated_at`, `completed_at`         | timestamptz  | UTC                                                                                           |
 
@@ -115,6 +115,8 @@ Category (`bug`, `diagnosis`, `privacy`, `billing`, `other`), message (max 2000)
 ### `usage_events`
 
 Event types: `diagnosis_used`, `reassessment`, `ai_request`, `ai_failure`.
+`claim_diagnosis_usage` is idempotent per diagnosis, so retrying a failed
+diagnosis does not create a second `diagnosis_used` event.
 
 A partial unique index guarantees at most one `diagnosis_used` claim per `(user_id, diagnosis_id)`. This makes quota claiming idempotent.
 

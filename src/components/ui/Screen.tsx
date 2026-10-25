@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 import { useTheme } from '@/providers/ThemeProvider';
+import { OfflineBanner } from './OfflineBanner';
 
 type ScreenProps = {
   children: React.ReactNode;
@@ -37,6 +38,7 @@ export function Screen({
       edges={edges}
       style={[styles.safe, { backgroundColor: theme.colors.background }, style]}
     >
+      <OfflineBanner />
       {scroll ? (
         <ScrollView
           style={styles.flex}

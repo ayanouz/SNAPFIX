@@ -12,6 +12,7 @@ export type DraftPhoto = {
 };
 
 type DiagnosisDraftState = {
+  ownerId: string | null;
   category: Category;
   description: string;
   brand: string;
@@ -19,6 +20,7 @@ type DiagnosisDraftState = {
   errorCode: string;
   ageYears: string;
   photos: DraftPhoto[];
+  setOwner: (ownerId: string) => void;
   setCategory: (category: Category) => void;
   setDescription: (description: string) => void;
   setBrand: (brand: string) => void;
@@ -31,6 +33,7 @@ type DiagnosisDraftState = {
 };
 
 const initial = {
+  ownerId: null as string | null,
   category: 'appliance' as Category,
   description: '',
   brand: '',
@@ -44,6 +47,8 @@ export const useDiagnosisDraft = create<DiagnosisDraftState>()(
   persist(
     (set) => ({
       ...initial,
+      setOwner: (ownerId) =>
+        set((state) => (state.ownerId === ownerId ? state : { ...initial, ownerId })),
       setCategory: (category) => set({ category }),
       setDescription: (description) => set({ description }),
       setBrand: (brand) => set({ brand }),
@@ -64,6 +69,7 @@ export const useDiagnosisDraft = create<DiagnosisDraftState>()(
       name: 'snapfix.diagnosis-draft.v1',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
+        ownerId: state.ownerId,
         category: state.category,
         description: state.description,
         brand: state.brand,

@@ -13,7 +13,7 @@
 - [ ] Large text, dark mode, and RTL layouts are usable.
 - [ ] App does not crash when permissions are denied.
 - [ ] No placeholder text, dead buttons, or unfinished routes.
-- [ ] **Verified in repo:** TypeScript passes, lint passes, 42 tests pass, Android JS bundle exports.
+- [ ] **Verified in repo:** TypeScript passes, lint passes, 44 tests pass, Android/iOS/web JS bundles export.
 
 ## 2. Safety and claims
 

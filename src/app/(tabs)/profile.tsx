@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -9,15 +9,17 @@ import {
   Card,
   Chip,
   DemoBanner,
+  LegalLinks,
   LoadingView,
   Screen,
   ScreenHeader,
 } from '@/components/ui';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useI18n } from '@/i18n';
-import { useAuth, useRepository } from '@/providers/AuthProvider';
-import { useDeleteAllData, useProfile, useUsage } from '@/hooks/queries';
+import { useAuth } from '@/providers/AuthProvider';
+import { useDeleteAllData, useProfile, useUpdateProfile, useUsage } from '@/hooks/queries';
 import { shareExport } from '@/services/share';
+import { exportUserData } from '@/services/export';
 import {
   CURRENCIES,
   LANGUAGES,
@@ -33,13 +35,14 @@ export default function ProfileScreen() {
   const { theme, preference, setTheme } = useTheme();
   const { t, language, isRTL } = useI18n();
   const router = useRouter();
-  const { session, signOut, deleteAccount } = useAuth();
-  const repository = useRepository();
+  const { session, signOut, deleteAccount, repository } = useAuth();
   const profile = useProfile();
   const usage = useUsage();
   const deleteAll = useDeleteAllData();
+  const { mutate: updateProfile } = useUpdateProfile();
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const syncedPreferences = useRef<string | null>(null);
 
   const setLanguage = usePreferencesStore((state) => state.setLanguage);
   const setCurrency = usePreferencesStore((state) => state.setCurrency);
@@ -47,10 +50,38 @@ export default function ProfileScreen() {
   const displayName = profile.data?.displayName || session?.user.displayName || 'SNAPFIX user';
   const email = profile.data?.email || session?.user.email || '';
 
+  useEffect(() => {
+    if (!session?.user.id || !profile.data) return;
+    const key = `${language}|${currency}|${preference}`;
+    if (syncedPreferences.current === key) return;
+    if (
+      profile.data.preferredLanguage === language &&
+      profile.data.preferredCurrency === currency &&
+      profile.data.theme === preference
+    ) {
+      syncedPreferences.current = key;
+      return;
+    }
+    syncedPreferences.current = key;
+    updateProfile(
+      {
+        preferredLanguage: language,
+        preferredCurrency: currency,
+        theme: preference,
+      },
+      {
+        onError: () => {
+          syncedPreferences.current = null;
+        },
+      },
+    );
+  }, [currency, language, preference, profile.data, session?.user.id, updateProfile]);
+
   const onExport = async () => {
+    if (!repository) return;
     setExporting(true);
     try {
-      const bundle = await repository.exportUserData();
+      const bundle = await exportUserData(repository);
       await shareExport(bundle);
       Alert.alert(t('common.done'), t('profile.export_ready'));
     } catch {
@@ -91,8 +122,12 @@ export default function ProfileScreen() {
         style: 'destructive',
         onPress: () => {
           void (async () => {
-            await signOut();
-            router.replace('/(auth)/sign-in');
+            try {
+              await signOut();
+              router.replace('/(auth)/sign-in');
+            } catch {
+              Alert.alert(t('errors.title'), t('errors.unknown'));
+            }
           })();
         },
       },
@@ -149,6 +184,27 @@ export default function ProfileScreen() {
       </View>
 
       <DemoBanner />
+
+      <Card style={styles.section}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/settings/profile')}
+          style={({ pressed }) => [
+            styles.linkRow,
+            { flexDirection: isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.7 : 1 },
+          ]}
+        >
+          <Ionicons name="person-circle-outline" size={20} color={theme.colors.text} />
+          <AppText variant="body" style={styles.flex}>
+            {t('profile.account_settings')}
+          </AppText>
+          <Ionicons
+            name={isRTL ? 'chevron-back' : 'chevron-forward'}
+            size={18}
+            color={theme.colors.textMuted}
+          />
+        </Pressable>
+      </Card>
 
       <Card style={styles.planCard}>
         <View style={[styles.rowBetween, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -268,6 +324,14 @@ export default function ProfileScreen() {
           loading={exporting}
           onPress={() => void onExport()}
         />
+      </Card>
+
+      <Card style={styles.section}>
+        <AppText variant="subtitle">{t('profile.legal')}</AppText>
+        <AppText variant="body" color={theme.colors.textMuted}>
+          {t('legal.intro')}
+        </AppText>
+        <LegalLinks />
       </Card>
 
       <Card style={styles.section}>

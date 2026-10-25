@@ -146,6 +146,16 @@ export function clearDrafts(): void {
   }
 }
 
+export function clearUserImages(userId: string): void {
+  if (Platform.OS === 'web') return;
+  try {
+    const directory = new Directory(Paths.document, 'snapfix', 'users', userId);
+    if (directory.exists) directory.delete();
+  } catch {
+    // Local cleanup must never block sign-out or account deletion.
+  }
+}
+
 export async function readImageBytes(uri: string): Promise<Uint8Array> {
   const file = new File(uri);
   if (!file.exists) throw new AppError('not_found', 'The local image is no longer available');

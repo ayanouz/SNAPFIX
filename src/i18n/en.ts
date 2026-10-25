@@ -41,6 +41,7 @@ export const en = {
     'You have reached the monthly diagnosis limit. Upgrade or wait for the next month.',
   'errors.ai_not_configured': 'The analysis service is not configured yet. Contact support.',
   'errors.ai_failed': 'The analysis service could not complete the request. Try again.',
+  'errors.analysis_failed': 'The analysis did not finish. Try again.',
   'errors.invalid_input': 'Check the information you entered.',
   'errors.not_found': 'That item no longer exists.',
   'errors.storage_failed': 'The photo could not be stored. Try again.',
@@ -107,6 +108,7 @@ export const en = {
     'This removes your diagnoses, photos, maintenance tasks, feedback, and account. It cannot be undone.',
   'auth.recovery_invalid': 'This recovery link is invalid or has expired.',
   'auth.password_hint': 'At least 8 characters, including a letter and a number.',
+  'auth.password_mismatch': 'The passwords do not match.',
 
   'tabs.home': 'Home',
   'tabs.history': 'History',
@@ -186,6 +188,10 @@ export const en = {
   'diagnosis.analyzing_step1': 'Checking the photos and description',
   'diagnosis.analyzing_step2': 'Separating observations from possible causes',
   'diagnosis.analyzing_step3': 'Applying independent safety rules',
+  'diagnosis.analyzing_slow':
+    'This is taking longer than usual. You can keep this screen open or come back later.',
+  'diagnosis.analyzing_leave':
+    'You can leave this screen. The assessment continues in the background.',
   'diagnosis.failed_title': 'The assessment did not finish',
   'diagnosis.failed_body': 'Your photos and description are saved. You can try the analysis again.',
   'diagnosis.retry_analysis': 'Retry assessment',
@@ -297,6 +303,52 @@ export const en = {
   'safety.warnings.uncertain_evidence': 'Limited evidence',
   'safety.warnings.photo_limitation': 'Photo limitation',
   'safety.warnings.demo_mode': 'Demo mode',
+  'safety.warning_bodies.gas_leak':
+    'A gas smell or leak is a potential emergency. Do not operate switches, light flames, or attempt repairs.',
+  'safety.warning_bodies.carbon_monoxide':
+    'Carbon monoxide may be present. This is a life-safety emergency, not a repair task.',
+  'safety.warning_bodies.fire_smoke':
+    'Fire, flames, or smoke were mentioned. Stop repair work and prioritise evacuation and emergency help.',
+  'safety.warning_bodies.electrical_hazard':
+    'Possible electrical hazard. Do not touch exposed conductors or work on energised equipment.',
+  'safety.warning_bodies.structural_hazard':
+    'Structural damage may be present. This is not safe to assess from a photo alone.',
+  'safety.warning_bodies.chemical_hazard':
+    'Possible chemical exposure. Avoid inhaling fumes or mixing products, and do not continue repairs.',
+  'safety.warning_bodies.pressure_system':
+    'Pressurised or heated-water systems can release scalding water or steam.',
+  'safety.warning_bodies.vehicle_safety':
+    'Brake, steering, or airbag faults are safety-critical vehicle systems.',
+  'safety.warning_bodies.high_voltage':
+    'This equipment can store dangerous high voltage even after it is unplugged.',
+  'safety.warning_bodies.unsafe_instruction_removed':
+    'Some unsafe instructions were removed from the AI response. Do not attempt procedures that bypass safety devices.',
+  'safety.warning_bodies.professional_required':
+    'This situation should be checked by a qualified professional. SNAPFIX will not provide DIY repair steps for it.',
+  'safety.warning_bodies.uncertain_evidence':
+    'The available evidence is limited, so the possible causes below are hypotheses rather than a confirmed diagnosis.',
+  'safety.warning_bodies.photo_limitation':
+    'A photo cannot confirm hidden faults, error codes, or the exact part that failed.',
+  'safety.warning_bodies.demo_mode':
+    'Demo mode: this guidance is generated from your description and deterministic safety rules. No image analysis model is running.',
+  'safety.escalations.gas_leak':
+    'Leave the area, avoid flames and electrical switches, ventilate only if safe, and contact your gas supplier or emergency services from a safe location.',
+  'safety.escalations.carbon_monoxide':
+    'Move everyone to fresh air, call emergency services, and do not re-enter until professionals confirm it is safe.',
+  'safety.escalations.fire_smoke':
+    'Evacuate, call emergency services, and do not use water on electrical fires. Only use a suitable extinguisher if it is safe to do so.',
+  'safety.escalations.electrical_hazard':
+    'Switch off power at the main breaker only if you can do so without touching damaged wiring. Keep others away and contact a qualified electrician.',
+  'safety.escalations.high_voltage':
+    'Do not open the enclosure. High-voltage components require a qualified technician.',
+  'safety.escalations.structural_hazard':
+    'Keep people away from the affected area and contact a qualified structural engineer or your building manager.',
+  'safety.escalations.chemical_hazard':
+    'Ventilate only if safe, leave the area, and contact poison control or emergency services if anyone is exposed.',
+  'safety.escalations.pressure_system':
+    'Do not open the system. Isolate it only through a safe external control and contact a qualified plumber or heating technician.',
+  'safety.escalations.vehicle_safety':
+    'Do not drive the vehicle. Arrange professional inspection or recovery.',
 
   'estimate.title': 'Cost estimate',
   'estimate.available': 'Reference range',
@@ -325,6 +377,8 @@ export const en = {
     'If the problem returns or anything feels unsafe, stop and contact a professional.',
   'repair.save_progress': 'Save progress',
   'repair.progress_saved': 'Progress saved.',
+  'repair.progress_save_failed':
+    'Your progress could not be saved. Check your connection and try again.',
   'repair.tools': 'Tools',
   'repair.materials': 'Materials',
   'repair.warning': 'Warning',
@@ -390,6 +444,11 @@ export const en = {
   'maintenance.notification_body': 'Enable notifications in system settings to receive reminders.',
   'maintenance.notification_scheduled': 'Reminder scheduled.',
   'maintenance.notification_error': 'The reminder could not be scheduled.',
+  'maintenance.reminder_web_title': 'Reminders need the mobile app',
+  'maintenance.reminder_web_body':
+    'Scheduled notifications are not available in the web preview. Your task will be saved without a reminder.',
+  'maintenance.reminder_web_unavailable':
+    'Scheduled reminders are available in the iOS and Android app.',
   'maintenance.form_title': 'New maintenance task',
   'maintenance.edit_title': 'Edit maintenance task',
   'maintenance.item': 'Item',
@@ -418,6 +477,12 @@ export const en = {
 
   'profile.title': 'Profile',
   'profile.account': 'Account',
+  'profile.account_settings': 'Account settings',
+  'profile.edit_profile': 'Edit profile',
+  'profile.display_name': 'Display name',
+  'profile.email': 'Email',
+  'profile.saved': 'Profile saved.',
+  'profile.change_password': 'Change password',
   'profile.plan': 'Plan',
   'profile.plan_free': 'Free',
   'profile.plan_premium': 'Premium',
@@ -448,6 +513,24 @@ export const en = {
   'profile.legal': 'Legal',
   'profile.terms': 'Terms of use',
   'profile.privacy_policy': 'Privacy policy',
+  'legal.title': 'Terms and privacy',
+  'legal.intro':
+    'SNAPFIX helps you organise observations and decide when to stop and contact a qualified professional. It is not a substitute for professional inspection, testing, or repair.',
+  'legal.terms_title': 'Terms of use',
+  'legal.terms_body':
+    'Use SNAPFIX only as a triage aid. Do not rely on it in an emergency, and never ignore safety guidance. SNAPFIX does not guarantee a diagnosis, a repair outcome, or a price. You are responsible for the information you submit and for complying with applicable law. Subscriptions, if offered, are billed by the app store and can be managed in your store account. We may update these terms; continued use means you accept the updated terms.',
+  'legal.privacy_title': 'Privacy summary',
+  'legal.privacy_body':
+    'Demo mode stores data on this device and does not call an AI service. Live mode stores account data in Supabase and sends the description and selected photos to the configured AI provider for analysis. We do not sell personal data. You can export or delete your data from the app. See the privacy screen for the full explanation.',
+  'legal.last_updated': 'Last updated: October 2026',
+  'legal.contact': 'Questions about these terms or your data: {email}',
+  'legal.terms_short': 'Terms of use',
+  'legal.privacy_short': 'Privacy policy',
+  'network.offline_title': 'You are offline',
+  'network.offline_body':
+    'Demo mode still works. Live analysis, sync, and cloud exports need a connection.',
+  'network.online_title': 'Back online',
+  'network.dismiss': 'Dismiss',
   'profile.delete_account_note':
     'Deleting your account removes the account and its cloud data. Local demo data is removed from this device.',
 

@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -13,6 +14,8 @@ import { isLiveMode } from '@/constants/config';
 import { createDemoAuthService } from '@/services/auth/demoAuth';
 import { createSupabaseAuthService } from '@/services/auth/supabaseAuth';
 import { createRepositoryForUser } from '@/services/repositories';
+import { clearLocalUserState } from '@/services/localState';
+import { clearUserImages } from '@/services/storage/imageService';
 import type { AuthService, AuthSession, DataRepository } from '@/services/repositories/types';
 
 const authService: AuthService = isLiveMode()
@@ -79,6 +82,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [session],
   );
 
+  const previousUserId = useRef<string | null>(null);
+  useEffect(() => {
+    if (session?.user.id) {
+      previousUserId.current = session.user.id;
+      return;
+    }
+    if (previousUserId.current) {
+      previousUserId.current = null;
+      void clearLocalUserState();
+    }
+  }, [session?.user.id]);
+
   const refreshSession = useCallback(async () => {
     try {
       const next = await authService.getSession();
@@ -113,10 +128,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    const userId = session?.user.id ?? null;
+    const mode = repository?.mode;
     await authService.signOut();
+    await clearLocalUserState();
+    // Demo data is local-only, so its photos must survive sign-out. Live data
+    // can be re-fetched from cloud storage, so local copies are removed.
+    if (mode === 'live' && userId) clearUserImages(userId);
     setSession(null);
     queryClient.clear();
-  }, [queryClient]);
+  }, [queryClient, repository?.mode, session?.user.id]);
 
   const requestPasswordReset = useCallback(async (email: string) => {
     setError(null);
@@ -134,10 +155,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const deleteAccount = useCallback(async () => {
+    const userId = session?.user.id ?? null;
+    if (repository?.mode === 'demo') {
+      await repository.deleteAllData();
+    }
     await authService.deleteAccount();
+    await clearLocalUserState();
+    if (userId) clearUserImages(userId);
     setSession(null);
     queryClient.clear();
-  }, [queryClient]);
+  }, [queryClient, repository, session?.user.id]);
 
   const clearError = useCallback(() => setError(null), []);
 

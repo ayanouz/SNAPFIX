@@ -74,6 +74,7 @@ export function buildAnalysis(input: {
           analysis: safe,
           currency: input.currency,
           region: input.region,
+          locale: input.locale,
           references: input.references,
         })
       : unavailableEstimate(input.currency, ESTIMATE_REASONS.noVerifiedPricing);

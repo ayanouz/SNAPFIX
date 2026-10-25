@@ -100,6 +100,7 @@ function RootNavigator() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="reset-password" />
+        <Stack.Screen name="legal" />
         <Stack.Screen name="diagnose/index" />
         <Stack.Screen name="diagnosis/[id]/index" />
         <Stack.Screen name="diagnosis/[id]/repair" />
@@ -109,6 +110,8 @@ function RootNavigator() {
         <Stack.Screen name="settings/subscription" />
         <Stack.Screen name="settings/support" />
         <Stack.Screen name="settings/privacy" />
+        <Stack.Screen name="settings/profile" />
+        <Stack.Screen name="settings/password" />
         <Stack.Screen name="+not-found" />
       </Stack>
     </>

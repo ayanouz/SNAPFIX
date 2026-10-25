@@ -7,6 +7,7 @@ import { useI18n } from '@/i18n';
 import { useAuth } from '@/providers/AuthProvider';
 import { useDeleteAllData } from '@/hooks/queries';
 import { shareExport } from '@/services/share';
+import { exportUserData } from '@/services/export';
 import { appConfig } from '@/constants/config';
 
 export default function PrivacyScreen() {
@@ -23,7 +24,7 @@ export default function PrivacyScreen() {
     }
     setExporting(true);
     try {
-      const bundle = await repository.exportUserData();
+      const bundle = await exportUserData(repository);
       await shareExport(bundle);
       Alert.alert(t('common.done'), t('profile.export_ready'));
     } catch {
