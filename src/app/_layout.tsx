@@ -9,6 +9,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { usePreferencesHydrated } from '@/hooks/useHydrated';
 import { usePreferencesStore } from '@/stores/preferences';
 import { AppProviders } from '@/providers/AppProviders';
+import { ErrorBoundary } from '@/providers/ErrorBoundary';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Splash screen may already be hidden during fast refresh.
@@ -121,9 +122,11 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <AppProviders>
-      <AppReady>
-        <RootNavigator />
-      </AppReady>
+      <ErrorBoundary>
+        <AppReady>
+          <RootNavigator />
+        </AppReady>
+      </ErrorBoundary>
     </AppProviders>
   );
 }
